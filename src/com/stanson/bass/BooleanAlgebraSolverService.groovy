@@ -29,7 +29,10 @@ class BooleanAlgebraSolverService {
         // a step back in order to take two steps forward. The next version will try a two or three step lookahead.
         List<Tuple2<Closure<Boolean>, Closure<ParseNode>>> canApplyTransform = [
                 [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw],
-                [this.&isDegenerateComposite, this.&collapseDegenerateComposite]
+                [this.&isDegenerateComposite, this.&collapseDegenerateComposite],
+                [this.&doubleNegationIsPresent, this.&collapseDoubleNegation],
+                [this.&isIdempotentComposite, this.&collapseIdempotentComposite]
+
         ]
         // Our heuristic right now is that anything reducing the depth or the number of expressions is a win, with
         // preference given to depth reduction
@@ -88,6 +91,27 @@ class BooleanAlgebraSolverService {
             }
             return childPathDepths.max() ?: 0
         }
+    }
+
+    Boolean isIdempotentComposite(ParseNode input) {
+        input.type in COMPOSITES &&
+                input.children &&
+                input.children.every { it == input.children.head() }
+    }
+
+    ParseNode collapseIdempotentComposite(ParseNode input) {
+        input.children.head()
+    }
+
+    Boolean doubleNegationIsPresent(ParseNode input) {
+        return input.type == ParseNodeType.NOT &&
+                input.children &&
+                input.children.head() &&
+                input.children.head().type == ParseNodeType.NOT
+    }
+
+    ParseNode collapseDoubleNegation(ParseNode input) {
+        input.children.head().children ? input.children.head().children.head() : null
     }
 
     Boolean isDegenerateComposite(ParseNode input) {
