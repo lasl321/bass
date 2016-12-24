@@ -28,7 +28,8 @@ class BooleanAlgebraSolverService {
         // step. Note that this will not yield optimized solutions. Sometimes the optimal solution requires taking
         // a step back in order to take two steps forward. The next version will try a two or three step lookahead.
         List<Tuple2<Closure<Boolean>, Closure<ParseNode>>> canApplyTransform = [
-                [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw]
+                [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw],
+                [this.&isDegenerateComposite, this.&collapseDegenerateComposite]
         ]
         // Our heuristic right now is that anything reducing the depth or the number of expressions is a win, with
         // preference given to depth reduction
@@ -87,6 +88,14 @@ class BooleanAlgebraSolverService {
             }
             return childPathDepths.max() ?: 0
         }
+    }
+
+    Boolean isDegenerateComposite(ParseNode input) {
+        input.type in COMPOSITES && input.children.size() < 2
+    }
+
+    ParseNode collapseDegenerateComposite(ParseNode input) {
+        input.children ? input.children.head() : null
     }
 
     /**
