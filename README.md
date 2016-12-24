@@ -15,3 +15,8 @@ It's a neat problem.
 
 
 It's not production ready.
+
+Tests
+------
+
+See the test cases for an idea of what I'm working on. These are standard Spock tests.

@@ -195,7 +195,7 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'simplifies Associative Law'() {
         given:
-        ParseNode formOne = new ParseNode(ParseNodeType.ANY).addChidren(
+        ParseNode formOne = new ParseNode(ParseNodeType.ANY).addChildren(
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
                 new ParseNode(ParseNodeType.ANY).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'B'),
@@ -208,7 +208,7 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                 new ParseNode(ParseNodeType.PREDICATE, 'C')
         )
 
-        ParseNode formTwo = new ParseNode(ParseNodeType.ALL).addChidren(
+        ParseNode formTwo = new ParseNode(ParseNodeType.ALL).addChildren(
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
                 new ParseNode(ParseNodeType.ALL).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'B'),
@@ -225,7 +225,65 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         ParseNode resultOne = service.solve(formOne)
         ParseNode resultTwo = service.solve(formTwo)
         then:
-        resultOne == expected
-        resultTwo == expected
+        resultOne == expectedOne
+        resultTwo == expectedTwo
+    }
+
+    void 'should calculate tree depth'() {
+        given:
+        ParseNode caseOne = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'Depth 3')
+                ),
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'Depth 4')
+                        )
+                )
+        )
+        ParseNode caseTwo = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'Depth 3')
+                )
+        )
+        expect:
+        service.calculateTreeDepth(caseOne) == 4
+        service.calculateTreeDepth(caseTwo) == 3
+
+    }
+
+    void 'should reduce degenerate composites'() {
+        given:
+        ParseNode predicate = new ParseNode(ParseNodeType.PREDICATE, 'A')
+        ParseNode degenerateAnd = new ParseNode(ParseNodeType.ALL).addChildren(predicate)
+        ParseNode degenerateOr = new ParseNode(ParseNodeType.ANY).addChildren(predicate)
+        ParseNode negationIsOK = new ParseNode(ParseNodeType.NOT).addChildren(predicate)
+        expect:
+        service.solve(degenerateAnd) == predicate
+        service.solve(degenerateOr) == predicate
+        service.solve(negationIsOK) == negationIsOK
+    }
+
+    void 'should count tree expressions'() {
+        given:
+        ParseNode caseOne = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A')
+                ),
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B')
+                        )
+                )
+        )
+        ParseNode caseTwo = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A')
+                )
+        )
+        expect:
+        service.countExpressions(caseOne) == 6
+        service.countExpressions(caseTwo) == 3
+
     }
 }
