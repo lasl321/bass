@@ -18,26 +18,13 @@ import org.apache.log4j.PatternLayout
 class BassDriver {
     static void main(String[] args) {
         BassDriver driver = new BassDriver()
-        driver.configureLogging()
         driver.driverLogic()
-    }
-
-    void configureLogging() {
-        log.level = Level.INFO
-        String pattern = '%d{YYYY-MM-dd HH:mm:ss.SSSS} %c >> %m\n'
-        // NOTE: Using groovy bean-style initialization (pattern: pattern or layout:consoleLayout) will
-        // break these classes. Doing so fails to call the 'activateOptions' internal helper. Poor form
-        // log4j!
-        Layout consoleLayout = new PatternLayout(pattern)
-        Appender console = new ConsoleAppender(consoleLayout)
-        log.getRootLogger().addAppender(console)
-
     }
 
     void driverLogic() {
         log.info('Starting...')
         BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 3)
-        // (A OR B) AND (A OR C) AND (A OR D)
+        // (A OR B) AND (A OR C) AND (A OR (D))
         // Expect a result akin to: A AND (B OR C OR D)
         ParseNode easy = new ParseNode(ParseNodeType.ALL).addChildren(
                 new ParseNode(ParseNodeType.ANY).addChildren(
@@ -50,7 +37,9 @@ class BassDriver {
                 ),
                 new ParseNode(ParseNodeType.ANY).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'A'),
-                        new ParseNode(ParseNodeType.PREDICATE, 'D')
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                            new ParseNode(ParseNodeType.PREDICATE, 'D')
+                        )
                 )
         )
         log.info('Simplifying easy case: ' + prettyPrint(easy))
@@ -65,31 +54,39 @@ class BassDriver {
     }
 
     String prettyPrint(ParseNode input) {
-        String line = '—'
-        StringBuffer buffer = new StringBuffer()
         Closure printer
-        printer = { Integer lines, ParseNode node ->
+        printer = { ParseNode node ->
             // process myself, then each of my children
-            String representation
+            String representation = 'wtf'
             if (node.type == ParseNodeType.PREDICATE) {
-                representation = node.data == null ? 'O' : node.data.toString()[0]
+                representation = (node.data == null) ? 'O' : node.data.toString()[0]
             } else if (node.type == ParseNodeType.NULL) {
                 representation = 'X'
             } else if (node.type == ParseNodeType.ANY) {
-                representation = '+'
+                representation = ' + '
             } else if (node.type == ParseNodeType.ALL) {
-                representation = '*'
+                representation = ' * '
             } else if (node.type == ParseNodeType.NOT) {
-                representation = '¬'
+                representation = ' ¬'
             }
-            buffer.append('\n' + (line * lines))
-            buffer.append(" $representation ")
+            String result = ''
+            if (node.type == ParseNodeType.NOT) {
+                result += (representation)
+            }
+            if (node.type in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
+                result += ('(')
+            } else if (node.type in [ParseNodeType.NULL, ParseNodeType.PREDICATE]) {
 
-            node.children.each {
-                printer(lines + 2, it)
+                result += ("$representation")
             }
+
+            List<String> childRepresentations = node.children.collect { printer(it) }
+            result += (childRepresentations.join(representation))
+            if (node.type in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
+                result += (')')
+            }
+            return result
         }
-        printer(0, input)
-        buffer
+        printer(input)
     }
 }
