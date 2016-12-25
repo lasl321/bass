@@ -29,6 +29,7 @@ class BooleanAlgebraSolverService {
             [this.&isIdempotentComposite, this.&collapseIdempotentComposite] as Tuple2,
             [this.&containsCollapsibleComposites, this.&collapseComposite] as Tuple2,
             [this.&canExtractCommonTerm, this.&extractCommonTerm] as Tuple2,
+            [this.&canDistributeTerm, this.&distributeTerm] as Tuple2,
     ]
 
     Integer lookAhead = 1
@@ -53,14 +54,10 @@ class BooleanAlgebraSolverService {
         List<ParseNode> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
-            log.info('Generating permutations.')
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
             if (transformedTrees.size() == 1) {
-                log.info('Single result set.')
                 workingTree = transformedTrees.get(0)
             } else {
-                log.info('Finding minimal result from the result list')
-
                 workingTree = transformedTrees.min { calculateTreeDepth(it) + countExpressions(it) }
             }
 
@@ -166,6 +163,38 @@ class BooleanAlgebraSolverService {
             }
             return childPathDepths.max() ?: 0
         }
+    }
+
+    /**
+     * True if this node is a composite containing at least one two children and at least one of them is a composite of
+     * the opposite type
+     * @param input
+     * @return
+     */
+    Boolean canDistributeTerm(ParseNode input) {
+        input.type in COMPOSITES && input.children.size() > 1 &&
+                input.children.find { it.type == COMPOSITE_FLIP.get(input.type) }
+    }
+
+    ParseNode distributeTerm(ParseNode input) {
+        // Select an opposite composite child to distribute
+        ParseNode oppositeCompositeChild = input.children.find { it.type == COMPOSITE_FLIP.get(input.type) }
+        List<ParseNode> otherChildren = input.children - oppositeCompositeChild
+
+        List<ParseNode> childrenOfOpposite = oppositeCompositeChild.children
+
+        ParseNode result = new ParseNode(COMPOSITE_FLIP.get(input.type))
+        List<ParseNode> newTerms = childrenOfOpposite.collect { ParseNode oppositeChild ->
+            ParseNode newParent = new ParseNode(input.type)
+            newParent.addChild(oppositeChild) // intentionally breaks parent link
+            otherChildren.each {
+                newParent.addChild(it.shallowCopy()) // <-- copy is important here, otherwise parent link will break
+            }
+            newParent
+        }
+        newTerms.each { result.addChild(it) }
+
+        result
     }
 
     /**

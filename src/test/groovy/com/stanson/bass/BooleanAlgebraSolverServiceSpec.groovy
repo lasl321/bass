@@ -48,7 +48,7 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                 )
         )
         expect:
-        service.solve(input) == expected
+        service.extractCommonTerm(input) == expected
     }
 
 
@@ -70,16 +70,18 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                 ),
         )
 
-        ParseNode expected = new ParseNode(ParseNodeType.ANY).addChildren(
+        ParseNode expected = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.ANY).addChildren(
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
                 new ParseNode(ParseNodeType.ALL).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'B'),
                         new ParseNode(ParseNodeType.PREDICATE, 'C'),
                         new ParseNode(ParseNodeType.PREDICATE, 'D'),
                 )
+            )
         )
         when:
-        ParseNode result = service.solve(input)
+        ParseNode result = service.extractCommonTerm(input)
         then:
         result == expected
     }
@@ -305,6 +307,94 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         service.countExpressions(caseOne) == 6
         service.countExpressions(caseTwo) == 3
 
+    }
+
+
+    void 'should identify cases where a term may be distributed'() {
+        given:
+        // A(B + C + D) -> AB + AC + AD
+        ParseNode case1 = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                )
+        )
+        // A + BCD      -> (A+B)(A+C)(A+D)
+        ParseNode case2 = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                )
+        )
+        // A + B + C    -> A + B + C
+        ParseNode case3 = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+        )
+        // ABC          -> ABC
+        ParseNode case4 = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+        )
+        // AB(C + D)    -> ABC + ABD
+        ParseNode case5 = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                )
+        )
+        // A + B + CD   -> (A + B + C)(A + B + D)
+        ParseNode case6 = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                )
+        )
+        expect:
+        service.canDistributeTerm(case1)
+        service.canDistributeTerm(case2)
+        !service.canDistributeTerm(case3)
+        !service.canDistributeTerm(case4)
+        service.canDistributeTerm(case5)
+        service.canDistributeTerm(case6)
+    }
+
+    void 'should cleverly use distributive properties'() {
+        given:
+        ParseNode input = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        )
+                )
+        )
+        ParseNode expected = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                )
+        )
+        service.lookAhead = 3
+        expect:
+        service.solve(input) == expected
     }
 
 //    void 'should extract common terms'() {

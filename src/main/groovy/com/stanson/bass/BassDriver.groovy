@@ -19,26 +19,25 @@ class BassDriver {
     static void main(String[] args) {
         BassDriver driver = new BassDriver()
         driver.driverLogic()
+
     }
 
     void driverLogic() {
         log.info('Starting...')
-        BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 5)
-        // (A OR B) AND (A OR C) AND (A OR (D))
-        // Expect a result akin to: A AND (B OR C OR D)
-        ParseNode easy = new ParseNode(ParseNodeType.ALL).addChildren(
-                new ParseNode(ParseNodeType.ANY).addChildren(
+        BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 3)
+        // AB + BC(B + C)
+        // Expect B(A + C)
+        ParseNode easy = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'A'),
                         new ParseNode(ParseNodeType.PREDICATE, 'B'),
                 ),
-                new ParseNode(ParseNodeType.ANY).addChildren(
-                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
                         new ParseNode(ParseNodeType.PREDICATE, 'C'),
-                ),
-                new ParseNode(ParseNodeType.ANY).addChildren(
-                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
-                        new ParseNode(ParseNodeType.ALL).addChildren(
-                            new ParseNode(ParseNodeType.PREDICATE, 'D')
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
                         )
                 )
         )
