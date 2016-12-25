@@ -2,12 +2,14 @@ package com.stanson.bass
 
 import com.stanson.parsing.ParseNode
 import com.stanson.parsing.ParseNodeType
+import groovy.util.logging.Log4j
 
 /**
  * Attempts to simplify provided boolean logic structures.
  *
  * Created by rdahlgren on 12/23/16.
  */
+@Log4j
 class BooleanAlgebraSolverService {
     static final List<ParseNodeType> COMPOSITES = [
             ParseNodeType.ANY, ParseNodeType.ALL

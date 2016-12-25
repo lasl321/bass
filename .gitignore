@@ -5,4 +5,6 @@
 # Idea droppings
 .idea/
 # Build output
-out/
+build/
+# Gradle cache
+.gradle/
