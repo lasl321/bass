@@ -97,7 +97,8 @@ class ParseNode {
         ParseNode that = obj as ParseNode
         return this.type == that.type &&
                 this.data == that.data &&
-                this.children.equals(that.children)
+                this.children.size() == that.children.size() &&
+                (this.children as Set<ParseNode>) == (that.children as Set<ParseNode>)
     }
 
     String toString() { toStringHelper('') }

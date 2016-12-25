@@ -61,9 +61,7 @@ class BooleanAlgebraSolverService {
             } else {
                 log.info('Finding minimal result from the result list')
 
-                workingTree = transformedTrees.min {
-                    calculateTreeDepth(it) + countExpressions(it)
-                }
+                workingTree = transformedTrees.min { calculateTreeDepth(it) + countExpressions(it) }
             }
 
             Integer newDepth = calculateTreeDepth(workingTree)
@@ -230,13 +228,20 @@ class BooleanAlgebraSolverService {
      * @return
      */
     Boolean isIdempotentComposite(ParseNode input) {
-        input.type in COMPOSITES &&
-                input.children &&
-                input.children.every { it == input.children.head() }
+        if (input.type in COMPOSITES) {
+            Integer uniqueChildCount = (input.children as Set).size()
+            return uniqueChildCount != input.children.size()
+        }
+        return false
     }
 
     ParseNode collapseIdempotentComposite(ParseNode input) {
-        input.children.head()
+        // Remove all children, add them back in via a set
+        List<ParseNode> children = input.children
+        children.each { input.removeChild(it) }
+
+        (children as Set<ParseNode>).each { input.addChild(it) }
+        input
     }
 
     /**

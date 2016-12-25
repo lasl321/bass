@@ -23,7 +23,7 @@ class BassDriver {
 
     void driverLogic() {
         log.info('Starting...')
-        BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 3)
+        BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 5)
         // (A OR B) AND (A OR C) AND (A OR (D))
         // Expect a result akin to: A AND (B OR C OR D)
         ParseNode easy = new ParseNode(ParseNodeType.ALL).addChildren(
@@ -44,12 +44,79 @@ class BassDriver {
         )
         log.info('Simplifying easy case: ' + prettyPrint(easy))
         ParseNode easyResult = bass.solve(easy)
-        log.info('Complete. Result is: ')
-        log.info(prettyPrint(easyResult))
-        // (A AND B) OR ((B AND C) OR (C AND D) OR (D AND E))
-//        ParseNode medium
-        // (A AND B AND F) OR (B AND C AND F) OR (A AND C) OR (A AND D) OR (B AND C) OR (B AND D) OR ((E OR F) AND (G OR H))
-//        ParseNode hard
+        log.info('Easy result is: ' + prettyPrint(easyResult))
+        // (A AND B) OR ((B AND C) OR (B AND C AND D) OR (B AND D AND E))
+        // Simplifies to B AND (A OR C OR D OR E)
+        ParseNode medium = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                ),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        ),
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                        ),
+                        new ParseNode(ParseNodeType.ALL).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'E'),
+                        ),
+                ),
+        )
+        log.info('Simplifying medium case: ' + prettyPrint(medium))
+        ParseNode mediumResult = bass.solve(medium)
+        log.info('Medium result: ' + prettyPrint(mediumResult))
+        // ((A * B * F) + (A * C * F) + (A * C) + (A * D) + (A * B * C) + (B * A) + E + F + ((E + F) * (F + E)))
+        ParseNode hard = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'F'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'F'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                ),
+                new ParseNode(ParseNodeType.PREDICATE, 'E'),
+                new ParseNode(ParseNodeType.PREDICATE, 'F'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'E'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'F'),
+                        ),
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'F'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'E'),
+                        ),
+                )
+        )
+        log.info('Simplifying hard case: ' + prettyPrint(hard))
+        ParseNode hardResult = bass.solve(hard)
+        log.info('Hard result: ' + prettyPrint(hardResult))
         log.info('Complete')
     }
 

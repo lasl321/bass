@@ -105,18 +105,24 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         ParseNode andVersion = new ParseNode(ParseNodeType.ALL).addChildren(
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
         )
-        ParseNode orVersion = new ParseNode(ParseNodeType.ALL).addChildren(
+        ParseNode orVersion = new ParseNode(ParseNodeType.ANY).addChildren(
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
                 new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
         )
-        ParseNode expected = new ParseNode(ParseNodeType.PREDICATE, 'A')
-        when:
-        ParseNode andResult = service.solve(andVersion)
-        ParseNode orResult = service.solve(orVersion)
-        then:
-        andResult == expected
-        orResult == expected
+        ParseNode expectedAnd = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B')
+        )
+        ParseNode expectedOr = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B')
+        )
+        expect:
+        service.solve(andVersion) == expectedAnd
+        service.solve(orVersion) == expectedOr
     }
 
     void 'identifies cases for DeMorgans Law'() {
