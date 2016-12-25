@@ -3,6 +3,7 @@ package com.stanson.bass
 import com.stanson.parsing.ParseNode
 import com.stanson.parsing.ParseNodeType
 import groovy.util.logging.Log4j
+import groovy.transform.CompileStatic
 
 /**
  * Attempts to simplify provided boolean logic structures.
@@ -10,6 +11,7 @@ import groovy.util.logging.Log4j
  * Created by rdahlgren on 12/23/16.
  */
 @Log4j
+@CompileStatic
 class BooleanAlgebraSolverService {
     static final List<ParseNodeType> COMPOSITES = [
             ParseNodeType.ANY, ParseNodeType.ALL
@@ -18,6 +20,14 @@ class BooleanAlgebraSolverService {
     static final Map<ParseNodeType, ParseNodeType> COMPOSITE_FLIP = [
             (ParseNodeType.ANY): ParseNodeType.ALL,
             (ParseNodeType.ALL): ParseNodeType.ANY
+    ]
+
+    private final List<Tuple2<Closure<Boolean>, Closure<ParseNode>>> canApplyTransform = [
+            [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw] as Tuple2,
+            [this.&isDegenerateComposite, this.&collapseDegenerateComposite] as Tuple2,
+            [this.&doubleNegationIsPresent, this.&collapseDoubleNegation] as Tuple2,
+            [this.&isIdempotentComposite, this.&collapseIdempotentComposite] as Tuple2
+
     ]
     /**
      * Given a ParseNode tree, attempt to return the simplest equivalent representation.
@@ -29,13 +39,7 @@ class BooleanAlgebraSolverService {
         // First we will try a greedy search. Basically anything that simplifies the tree will be considered a good
         // step. Note that this will not yield optimized solutions. Sometimes the optimal solution requires taking
         // a step back in order to take two steps forward. The next version will try a two or three step lookahead.
-        List<Tuple2<Closure<Boolean>, Closure<ParseNode>>> canApplyTransform = [
-                [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw],
-                [this.&isDegenerateComposite, this.&collapseDegenerateComposite],
-                [this.&doubleNegationIsPresent, this.&collapseDoubleNegation],
-                [this.&isIdempotentComposite, this.&collapseIdempotentComposite]
 
-        ]
         // Our heuristic right now is that anything reducing the depth or the number of expressions is a win, with
         // preference given to depth reduction
         // I wrap the input tree in a superfluous node here so that I don't need to do any weird gymnastics to have
