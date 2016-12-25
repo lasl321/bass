@@ -18,34 +18,43 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'simplifies Distributive Law'() {
         given:
-        // (A AND B) OR (A AND C) -> A AND (B OR C)
+        // (A AND B) OR (A AND C) OR (A AND D) OR E -> E OR (A AND (B OR C OR D))
         ParseNode input = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'E'),
                 new ParseNode(ParseNodeType.ALL).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'A'),
                         new ParseNode(ParseNodeType.PREDICATE, 'B')
                 ),
                 new ParseNode(ParseNodeType.ALL).addChildren(
-                    new ParseNode(ParseNodeType.PREDICATE, 'A'),
-                    new ParseNode(ParseNodeType.PREDICATE, 'C')
-                )
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C')
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D')
+                ),
         )
 
-        ParseNode expected = new ParseNode(ParseNodeType.ALL).addChildren(
-                new ParseNode(ParseNodeType.PREDICATE, 'A'),
-                new ParseNode(ParseNodeType.ANY).addChildren(
-                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
-                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+
+        ParseNode expected = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'E'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                    new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                    new ParseNode(ParseNodeType.ANY).addChildren(
+                            new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                            new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                            new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                    )
                 )
         )
-        when:
-        ParseNode result = service.solve(input)
-        then:
-        result == expected
+        expect:
+        service.solve(input) == expected
     }
+
 
     void 'simplifies Distributive Law (2nd Form)'() {
         given:
-        // (A OR B) AND (A OR C) -> A OR (B AND C)
+        // (A OR B) AND (A OR C) AND (A OR D) -> A OR (B AND C AND D)
         ParseNode input = new ParseNode(ParseNodeType.ALL).addChildren(
                 new ParseNode(ParseNodeType.ANY).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'A'),
@@ -55,6 +64,10 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                         new ParseNode(ParseNodeType.PREDICATE, 'A'),
                         new ParseNode(ParseNodeType.PREDICATE, 'C'),
                 ),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                ),
         )
 
         ParseNode expected = new ParseNode(ParseNodeType.ANY).addChildren(
@@ -62,6 +75,7 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                 new ParseNode(ParseNodeType.ALL).addChildren(
                         new ParseNode(ParseNodeType.PREDICATE, 'B'),
                         new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
                 )
         )
         when:
@@ -185,12 +199,12 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                 )
         )
         expect:
-        service.applyDeMorgansLaw(formOneA) == formOneB
-        service.applyDeMorgansLaw(formOneB) == formOneA
+        service.applyDeMorgansLaw(formOneA.shallowCopy()) == formOneB
+        service.applyDeMorgansLaw(formOneB.shallowCopy()) == formOneA
 
 
-        service.applyDeMorgansLaw(formTwoA) == formTwoB
-        service.applyDeMorgansLaw(formTwoB) == formTwoA
+        service.applyDeMorgansLaw(formTwoA.shallowCopy()) == formTwoB
+        service.applyDeMorgansLaw(formTwoB.shallowCopy()) == formTwoA
     }
 
     void 'simplifies Associative Law'() {
@@ -255,9 +269,9 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'should reduce degenerate composites'() {
         given:
         ParseNode predicate = new ParseNode(ParseNodeType.PREDICATE, 'A')
-        ParseNode degenerateAnd = new ParseNode(ParseNodeType.ALL).addChildren(predicate)
-        ParseNode degenerateOr = new ParseNode(ParseNodeType.ANY).addChildren(predicate)
-        ParseNode negationIsOK = new ParseNode(ParseNodeType.NOT).addChildren(predicate)
+        ParseNode degenerateAnd = new ParseNode(ParseNodeType.ALL).addChildren(predicate.shallowCopy())
+        ParseNode degenerateOr = new ParseNode(ParseNodeType.ANY).addChildren(predicate.shallowCopy())
+        ParseNode negationIsOK = new ParseNode(ParseNodeType.NOT).addChildren(predicate.shallowCopy())
         expect:
         service.solve(degenerateAnd) == predicate
         service.solve(degenerateOr) == predicate
@@ -286,4 +300,10 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         service.countExpressions(caseTwo) == 3
 
     }
+
+//    void 'should extract common terms'() {
+//        given:
+//        ParseNode andCase =
+//        expect:
+//    }
 }

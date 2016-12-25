@@ -26,9 +26,12 @@ class BooleanAlgebraSolverService {
             [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw] as Tuple2,
             [this.&isDegenerateComposite, this.&collapseDegenerateComposite] as Tuple2,
             [this.&doubleNegationIsPresent, this.&collapseDoubleNegation] as Tuple2,
-            [this.&isIdempotentComposite, this.&collapseIdempotentComposite] as Tuple2
-
+            [this.&isIdempotentComposite, this.&collapseIdempotentComposite] as Tuple2,
+            [this.&containsCollapsibleComposites, this.&collapseComposite] as Tuple2,
+            [this.&canExtractCommonTerm, this.&extractCommonTerm] as Tuple2,
     ]
+
+    Integer lookAhead = 1
     /**
      * Given a ParseNode tree, attempt to return the simplest equivalent representation.
      *
@@ -36,12 +39,6 @@ class BooleanAlgebraSolverService {
      * @return
      */
     ParseNode solve(ParseNode input) {
-        // First we will try a greedy search. Basically anything that simplifies the tree will be considered a good
-        // step. Note that this will not yield optimized solutions. Sometimes the optimal solution requires taking
-        // a step back in order to take two steps forward. The next version will try a two or three step lookahead.
-
-        // Our heuristic right now is that anything reducing the depth or the number of expressions is a win, with
-        // preference given to depth reduction
         // I wrap the input tree in a superfluous node here so that I don't need to do any weird gymnastics to have
         // a proper 'parent handle' when replacing children below. Consider the case when a transform should be applied
         // to the supplied input root - I would need some special case handling to detect the parentless node and update
@@ -53,27 +50,88 @@ class BooleanAlgebraSolverService {
         Integer treeDepth = calculateTreeDepth(workingTree)
 
 
+        List<ParseNode> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
-            canApplyTransform.each { Closure<Boolean> check, Closure<ParseNode> transform ->
-                workingTree.depthFirstPostTraversal { ParseNode parent ->
-                    for (int i = 0; i < parent.children.size(); i++) {
-                        ParseNode child = parent.children[i]
-                        if (check(child)) {
-                            parent.children[i] = transform(child)
-                        }
-                    }
+            log.info('Generating permutations.')
+            generatePermutations(transformedTrees, lookAhead, 1, workingTree)
+            if (transformedTrees.size() == 1) {
+                log.info('Single result set.')
+                workingTree = transformedTrees.get(0)
+            } else {
+                log.info('Finding minimal result from the result list')
+
+                workingTree = transformedTrees.min {
+                    calculateTreeDepth(it) + countExpressions(it)
                 }
             }
+
             Integer newDepth = calculateTreeDepth(workingTree)
             Integer newExpressionCount = countExpressions(workingTree)
             progressMade = (newDepth < treeDepth) || (newExpressionCount < expressionCount)
             treeDepth = newDepth
             expressionCount = newExpressionCount
+            transformedTrees.clear()
         }
         workingTree.children.head()
     }
 
+    /**
+     * Descend up to `depth` creating all possible permutations of applicable transforms.
+     *
+     * @param result Stores generated permutations
+     * @param depth Desired recursion depth. 2 or 3 should suffice.
+     * @param currentDepth Stack-storage of the current depth
+     * @param root Root of the tree to generate permutations for
+     */
+    void generatePermutations(List<ParseNode> result, Integer depth, Integer currentDepth, ParseNode root) {
+        result.add(root)
+        Closure visitor = { ParseNode p ->
+            // For each possible transform, see if it applies to this node. If so, transform
+            // the corresponding node on a copy tree and add the result to the permutation list
+            canApplyTransform.each { Closure<Boolean> check, Closure<ParseNode> transform ->
+                if (check(p)) {
+                    ParseNode transformedTree = createTransformedTree(root, p, transform)
+                    result.add(transformedTree)
+                    if (currentDepth < depth) { // recurse if desired
+                        // traverse from the root of the transformed tree
+                        generatePermutations(result, depth, currentDepth + 1, transformedTree)
+                    }
+                }
+            }
+        }
+        root.depthFirstPostTraversal(visitor)
+    }
+
+    /**
+     * Helper method to generate a tree copy that transforms the target node when encountered.
+     * @param root
+     * @param target
+     * @param transform
+     * @return
+     */
+    ParseNode createTransformedTree(ParseNode root, ParseNode target, Closure<ParseNode> transform) {
+        ParseNode result = new ParseNode(root.type, root.data)
+        root.children.each { ParseNode child ->
+            ParseNode childCopy = createTransformedTree(child, target, transform)
+            if (child == target) {
+                childCopy = transform(childCopy)
+            }
+            if (childCopy) { // a pruning could have occurred
+                result.addChild(childCopy)
+            } else {
+                result.removeChild(target)
+            }
+        }
+        result
+    }
+
+    /**
+     * Counts the number of nodes in the tree. Used as a measure of complexity.
+     *
+     * @param tree
+     * @return
+     */
     Integer countExpressions(ParseNode tree) {
         Integer count = 0
         Closure counter = { ParseNode node ->
@@ -83,10 +141,23 @@ class BooleanAlgebraSolverService {
         count
     }
 
+    /**
+     * Determines how deep a tree goes.
+     *
+     * @param tree
+     * @return
+     */
     Integer calculateTreeDepth(ParseNode tree) {
         depthCalculatorRecursion(tree, 0)
     }
 
+    /**
+     * Recursive helper.
+     *
+     * @param node
+     * @param parentDepth
+     * @return
+     */
     private Integer depthCalculatorRecursion(ParseNode node, Integer parentDepth) {
 
         if (node.type == ParseNodeType.PREDICATE) {
@@ -99,6 +170,65 @@ class BooleanAlgebraSolverService {
         }
     }
 
+    /**
+     * True if this node is a composite and more than one child of this node is of the opposite composite type
+     * and those qualifying children share at least one common term.
+     * @param input
+     * @return
+     */
+    Boolean canExtractCommonTerm(ParseNode input) {
+        if (input.type in COMPOSITES) {
+            List<ParseNode> oppositeKids = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
+            if (oppositeKids.size() > 1) {
+                // Get the children of each opposite kid as a Set, then check for a non-empty intersection between them
+                List<Set<ParseNode>> oppositeKidsChildren = oppositeKids.collect { it.children as Set<ParseNode> }
+                Set<ParseNode> intersection = oppositeKidsChildren.inject {
+                    Set<ParseNode> intersection, Set<ParseNode> compositeEntries ->
+                        intersection.intersect(compositeEntries)
+                }
+                return !intersection.isEmpty()
+            }
+        }
+        false
+    }
+
+    /**
+     * Extracts a common term from a node identified as qualifying for this transform.
+     * @param input
+     * @return
+     */
+    ParseNode extractCommonTerm(ParseNode input) {
+        // Remove everything that's being pushed down a level
+        List<ParseNode> oppositeCompositeKids = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
+        oppositeCompositeKids.each { input.removeChild(it) }
+
+        // Get the common term (just take the first)
+        ParseNode commonTerm = oppositeCompositeKids.collect {
+            it.children as Set<ParseNode>
+        }.inject {
+            Set<ParseNode> intersection, Set<ParseNode> compositeEntries -> intersection.intersect(compositeEntries)
+        }.head()
+        // Make the new composites
+        ParseNode newOpposite = new ParseNode(COMPOSITE_FLIP.get(input.type))
+        newOpposite.addChild(commonTerm) // common term goes here
+        input.addChild(newOpposite) // this is attached to the input
+
+        ParseNode newSame = new ParseNode(input.type)
+
+        // Now add the opposite composite grandkids to the 'newSame' collection
+        List<ParseNode> remainingGrandkids = oppositeCompositeKids.collectMany {
+            it.children.findAll { it != commonTerm }
+        }
+        remainingGrandkids.each { newSame.addChild(it) }
+        newOpposite.addChild(newSame) // all the kids added go under the new opposite
+        input
+    }
+
+    /**
+     * True if this node is a composite and contains equivalent children.
+     * @param input
+     * @return
+     */
     Boolean isIdempotentComposite(ParseNode input) {
         input.type in COMPOSITES &&
                 input.children &&
@@ -109,8 +239,31 @@ class BooleanAlgebraSolverService {
         input.children.head()
     }
 
+    /**
+     * True if this node is a composite and contains children of the same composite type.
+     *
+     * @param input
+     * @return
+     */
+    Boolean containsCollapsibleComposites(ParseNode input) {
+        // Input is a composite and contains children of the same composite type
+        input.type in COMPOSITES && input.children.findAll { it.type == input.type }
+    }
+
+    ParseNode collapseComposite(ParseNode input) {
+        List<ParseNode> redundantKids = input.children.findAll { it.type == input.type }
+        List<ParseNode> grandKids = redundantKids.collectMany { it.children }
+        grandKids.each { input.addChild(it) }
+        input
+    }
+
+    /**
+     * True if a not contains a not.
+     * @param input
+     * @return
+     */
     Boolean doubleNegationIsPresent(ParseNode input) {
-        return input.type == ParseNodeType.NOT &&
+        input.type == ParseNodeType.NOT &&
                 input.children &&
                 input.children.head() &&
                 input.children.head().type == ParseNodeType.NOT
@@ -120,9 +273,15 @@ class BooleanAlgebraSolverService {
         input.children.head().children ? input.children.head().children.head() : null
     }
 
+    /**
+     * True for composites containing fewer than two children.
+     * @param input
+     * @return
+     */
     Boolean isDegenerateComposite(ParseNode input) {
         input.type in COMPOSITES && input.children.size() < 2
     }
+
 
     ParseNode collapseDegenerateComposite(ParseNode input) {
         input.children ? input.children.head() : null

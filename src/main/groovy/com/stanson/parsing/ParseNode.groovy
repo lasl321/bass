@@ -9,8 +9,11 @@ import groovy.transform.CompileStatic
 enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE }
 
 /**
- * A node holds data, zero or more textual tags, and zero or more references
- * to children.
+ * A node holds data and zero or more references to children.
+ *
+ * TODO: Allow the injection of a data comparator. Consider comparing two identical predicates that differ only
+ * in their generated predicate '_id'. Currently this would evaluate to not-equal, though semantically they may
+ * be the same.
  */
 @CompileStatic
 class ParseNode {
@@ -60,6 +63,7 @@ class ParseNode {
      * provided node's parent.
      */
     void addChild(ParseNode child) {
+        if (child.parent) { child.parent.removeChild(child) }
         children << child
         child.parent = this
     }
@@ -116,17 +120,22 @@ class ParseNode {
      * Linked `data` elements are copied by reference. Users of a copy should take care to make defensive copies
      * of data objects if they need to be changed.
      */
-    ParseNode copy() { treeCopy(this) }
-    private ParseNode treeCopy(ParseNode node) {
+    ParseNode copy() { treeCopy(this, true) }
+    ParseNode shallowCopy() { treeCopy(this, false) }
+    private ParseNode treeCopy(ParseNode node, Boolean deepCopy) {
         // RD 2015-07-02 09:20:30 The data copy here is fragile, I know
-        def newData
-        if (node.data && node.data.getClass().isAssignableFrom(Map)) {
-            newData = ((Map)node.data).collectEntries { k, v -> [(k): v] }
-        } else if (node.data && node.data.getClass().isAssignableFrom(List)) {
-            newData = ((List)node.data).collect()
-        } else { newData = node.data }
+        def newData = node.data
+        if (deepCopy) {
+            if (node.data && node.data.getClass().isAssignableFrom(Map)) {
+                // try making a single level map copy
+                newData = ((Map) node.data).collectEntries { k, v -> [(k): v] }
+            } else if (node.data && node.data.getClass().isAssignableFrom(List)) {
+                // try making a list copy
+                newData = ((List) node.data).collect()
+            }
+        }
         ParseNode result = new ParseNode(node.type, newData)
-        node.children.each { child -> result.addChild(treeCopy(child)) }
+        node.children.each { child -> result.addChild(treeCopy(child, deepCopy)) }
         result
     }
 
