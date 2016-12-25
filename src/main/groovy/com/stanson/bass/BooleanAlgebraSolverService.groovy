@@ -55,7 +55,7 @@ class BooleanAlgebraSolverService {
 
         Boolean progressMade = true
         while (progressMade) {
-            canApplyTransform.each { Closure check, Closure transform ->
+            canApplyTransform.each { Closure<Boolean> check, Closure<ParseNode> transform ->
                 workingTree.depthFirstPostTraversal { ParseNode parent ->
                     for (int i = 0; i < parent.children.size(); i++) {
                         ParseNode child = parent.children[i]
@@ -157,14 +157,20 @@ class BooleanAlgebraSolverService {
         ParseNode result
         // We can assume DeMorgan's does apply here, so the case determination is simple
         if (input.type in COMPOSITES) { // Composite of two negated elements -> negation of opposite composite with two
+            ParseNode elementOne = input.children[0].children[0] // first negation's child
+            ParseNode elementTwo = input.children[1].children[0] // second negation's child
+
             result = new ParseNode(ParseNodeType.NOT).addChildren(
-                    new ParseNode(COMPOSITE_FLIP.get(input.type)).addChildren(*input.children.collect { it.children.head() })
+                    new ParseNode(COMPOSITE_FLIP.get(input.type)).addChildren(elementOne, elementTwo)
             )
         } else { // Negation of composite with two -> Opposite composite of two negations
-            result = new ParseNode(COMPOSITE_FLIP.get(input.children.head().type)).addChildren(
-                    *(input.children.head().children.collect { ParseNode child ->
-                        new ParseNode(ParseNodeType.NOT).addChildren(child)
-                    })
+            ParseNode composite = input.children[0]
+            ParseNode elementOne = composite.children[0] // negation's child's first element
+            ParseNode elementTwo = composite.children[1] // negation's child's second element
+
+            result = new ParseNode(COMPOSITE_FLIP.get(composite.type)).addChildren(
+                    new ParseNode(ParseNodeType.NOT).addChildren(elementOne),
+                    new ParseNode(ParseNodeType.NOT).addChildren(elementTwo)
             )
         }
         result

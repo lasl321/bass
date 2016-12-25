@@ -8,6 +8,8 @@ import org.apache.log4j.Level
 import org.apache.log4j.PatternLayout
 
 /**
+ * Driver program for development purposes.
+ *
  * Created by rdahlgren on 12/25/16.
  */
 @Log4j
