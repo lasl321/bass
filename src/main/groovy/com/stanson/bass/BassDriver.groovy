@@ -48,7 +48,7 @@ class BassDriver {
         log.info(prettyPrint(easyResult))
         // (A AND B) OR ((B AND C) OR (C AND D) OR (D AND E))
 //        ParseNode medium
-        // (A AND B) OR (B AND C) OR (A AND C) OR (A AND D) OR (B AND C) OR (B AND D) OR ((E OR F) AND (G OR H))
+        // (A AND B AND F) OR (B AND C AND F) OR (A AND C) OR (A AND D) OR (B AND C) OR (B AND D) OR ((E OR F) AND (G OR H))
 //        ParseNode hard
         log.info('Complete')
     }
