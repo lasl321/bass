@@ -392,14 +392,83 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
                         new ParseNode(ParseNodeType.PREDICATE, 'C'),
                 )
         )
-        service.lookAhead = 3
+        service.lookAhead = 2
         expect:
         service.solve(input) == expected
     }
 
-//    void 'should extract common terms'() {
-//        given:
-//        ParseNode andCase =
-//        expect:
-//    }
+    void 'should identify absorption 1 and 2 cases'() {
+        given:
+        ParseNode absorption1Case = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                )
+        )
+
+        ParseNode absorption2Case = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                )
+        )
+
+        ParseNode shouldFail = new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        )
+                )
+
+        ParseNode shouldAlsoFail = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        )
+                )
+        )
+        expect:
+        service.canAbsorbComposite(absorption1Case)
+        service.canAbsorbComposite(absorption2Case)
+        !service.canAbsorbComposite(shouldFail)
+        !service.canAbsorbComposite(shouldAlsoFail)
+    }
+
+    void 'should handle absorption 1 and 2 cases'() {
+        given:
+        ParseNode absorption1Case = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                )
+        )
+
+        ParseNode predicateA = new ParseNode(ParseNodeType.PREDICATE, 'A')
+
+        ParseNode absorption2Case = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                )
+        )
+        expect:
+        service.absorbComposite(absorption1Case) == new ParseNode(ParseNodeType.ALL).addChildren(predicateA)
+        service.absorbComposite(absorption2Case) == new ParseNode(ParseNodeType.ANY).addChildren(predicateA)
+    }
 }

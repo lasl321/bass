@@ -119,7 +119,7 @@ class BassDriver {
         log.info('Complete')
     }
 
-    String prettyPrint(ParseNode input) {
+    static String prettyPrint(ParseNode input) {
         Closure printer
         printer = { ParseNode node ->
             // process myself, then each of my children

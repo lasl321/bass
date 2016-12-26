@@ -30,6 +30,7 @@ class BooleanAlgebraSolverService {
             [this.&containsCollapsibleComposites, this.&collapseComposite] as Tuple2,
             [this.&canExtractCommonTerm, this.&extractCommonTerm] as Tuple2,
             [this.&canDistributeTerm, this.&distributeTerm] as Tuple2,
+            [this.&canAbsorbComposite, this.&absorbComposite] as Tuple2,
     ]
 
     Integer lookAhead = 1
@@ -54,6 +55,7 @@ class BooleanAlgebraSolverService {
         List<ParseNode> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
+            log.info('Working on ' + BassDriver.prettyPrint(workingTree))
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
             if (transformedTrees.size() == 1) {
                 workingTree = transformedTrees.get(0)
@@ -61,6 +63,7 @@ class BooleanAlgebraSolverService {
                 workingTree = transformedTrees.min { calculateTreeDepth(it) + countExpressions(it) }
             }
 
+            log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree))
             Integer newDepth = calculateTreeDepth(workingTree)
             Integer newExpressionCount = countExpressions(workingTree)
             progressMade = (newDepth < treeDepth) || (newExpressionCount < expressionCount)
@@ -166,6 +169,38 @@ class BooleanAlgebraSolverService {
     }
 
     /**
+     * True if this input is a composite containing two elements, one of which is a composite of the opposite type
+     * containing the other element.
+     *
+     * @param input
+     * @return
+     */
+    Boolean canAbsorbComposite(ParseNode input) {
+        if (input.type in COMPOSITES && input.children.size() == 2) {
+            ParseNode oppositeComposite = input.children.find {
+                it.type == COMPOSITE_FLIP.get(input.type)
+            }
+            if (oppositeComposite) {
+                List<ParseNode> copiedChildren = input.children.collect()
+                copiedChildren.removeElement(oppositeComposite)
+                ParseNode otherChild = copiedChildren.head()
+                if (otherChild in oppositeComposite.children) {
+                    return true
+                }
+            }
+        }
+        return false
+    }
+
+    ParseNode absorbComposite(ParseNode input) {
+        ParseNode oppositeComposite = input.children.find {
+            it.type == COMPOSITE_FLIP.get(input.type)
+        }
+        input.removeChild(oppositeComposite)
+        input
+    }
+
+    /**
      * True if this node is a composite containing at least one two children and at least one of them is a composite of
      * the opposite type
      * @param input
@@ -179,7 +214,9 @@ class BooleanAlgebraSolverService {
     ParseNode distributeTerm(ParseNode input) {
         // Select an opposite composite child to distribute
         ParseNode oppositeCompositeChild = input.children.find { it.type == COMPOSITE_FLIP.get(input.type) }
-        List<ParseNode> otherChildren = input.children - oppositeCompositeChild
+
+        List<ParseNode> otherChildren = input.children.collect()
+        otherChildren.remove(oppositeCompositeChild)
 
         List<ParseNode> childrenOfOpposite = oppositeCompositeChild.children
 
