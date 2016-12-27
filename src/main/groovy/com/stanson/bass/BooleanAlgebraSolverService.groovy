@@ -13,6 +13,11 @@ import groovy.transform.CompileStatic
 @Log4j
 @CompileStatic
 class BooleanAlgebraSolverService {
+    private static final class TransformedTree {
+        // transform name applied to the root yields the next ancestor (or this tree)
+        List<Tuple2<String,ParseNode>> ancestors = []
+        ParseNode root
+    }
     static final List<ParseNodeType> COMPOSITES = [
             ParseNodeType.ANY, ParseNodeType.ALL
     ]
@@ -22,15 +27,15 @@ class BooleanAlgebraSolverService {
             (ParseNodeType.ALL): ParseNodeType.ANY
     ]
 
-    private final List<Tuple2<Closure<Boolean>, Closure<ParseNode>>> canApplyTransform = [
-            [this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw] as Tuple2,
-            [this.&isDegenerateComposite, this.&collapseDegenerateComposite] as Tuple2,
-            [this.&doubleNegationIsPresent, this.&collapseDoubleNegation] as Tuple2,
-            [this.&isIdempotentComposite, this.&collapseIdempotentComposite] as Tuple2,
-            [this.&containsCollapsibleComposites, this.&collapseComposite] as Tuple2,
-            [this.&canExtractCommonTerm, this.&extractCommonTerm] as Tuple2,
-            [this.&canDistributeTerm, this.&distributeTerm] as Tuple2,
-            [this.&canAbsorbComposite, this.&absorbComposite] as Tuple2,
+    private final List<Tuple> canApplyTransform = [
+            new Tuple('DeMorgan\'s Law', this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw),
+            new Tuple('Degenerate Composite', this.&isDegenerateComposite, this.&collapseDegenerateComposite),
+            new Tuple('Double Negative', this.&doubleNegationIsPresent, this.&collapseDoubleNegation),
+            new Tuple('Idempotent Composite', this.&isIdempotentComposite, this.&collapseIdempotentComposite),
+            new Tuple('Collapsible Composite', this.&containsCollapsibleComposites, this.&collapseComposite),
+            new Tuple('Common Term Extraction', this.&canExtractCommonTerm, this.&extractCommonTerm),
+            new Tuple('Term Distribution', this.&canDistributeTerm, this.&distributeTerm),
+            new Tuple('Absorption 1 or 2', this.&canAbsorbComposite, this.&absorbComposite),
     ]
 
     Integer lookAhead = 1
@@ -46,32 +51,38 @@ class BooleanAlgebraSolverService {
         // to the supplied input root - I would need some special case handling to detect the parentless node and update
         // the 'result' reference rather than keeping the logic uniform.
 
-        ParseNode workingTree = new ParseNode(ParseNodeType.NULL).addChildren(input)
+        TransformedTree workingTree = new TransformedTree(
+                root: new ParseNode(ParseNodeType.NULL).addChildren(input),
+        )
 
-        Integer expressionCount = countExpressions(workingTree)
-        Integer treeDepth = calculateTreeDepth(workingTree)
+        Integer expressionCount = countExpressions(workingTree.root)
+        Integer treeDepth = calculateTreeDepth(workingTree.root)
 
 
-        List<ParseNode> transformedTrees = []
+        List<TransformedTree> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
-            log.info('Working on ' + BassDriver.prettyPrint(workingTree))
+            log.info('Working on ' + BassDriver.prettyPrint(workingTree.root))
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
             if (transformedTrees.size() == 1) {
                 workingTree = transformedTrees.get(0)
             } else {
-                workingTree = transformedTrees.min { calculateTreeDepth(it) + countExpressions(it) }
+                workingTree = transformedTrees.min { calculateTreeDepth(it.root) + countExpressions(it.root) }
             }
 
-            log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree))
-            Integer newDepth = calculateTreeDepth(workingTree)
-            Integer newExpressionCount = countExpressions(workingTree)
+            log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree.root))
+            log.info('Ancestry of this permutation is:')
+            workingTree.ancestors.each { String transformName, ParseNode oldRoot ->
+                log.info("Applied ${transformName} to ${BassDriver.prettyPrint(oldRoot)}")
+            }
+            Integer newDepth = calculateTreeDepth(workingTree.root)
+            Integer newExpressionCount = countExpressions(workingTree.root)
             progressMade = (newDepth < treeDepth) || (newExpressionCount < expressionCount)
             treeDepth = newDepth
             expressionCount = newExpressionCount
             transformedTrees.clear()
         }
-        workingTree.children.head()
+        workingTree.root.children.head()
     }
 
     /**
@@ -82,14 +93,25 @@ class BooleanAlgebraSolverService {
      * @param currentDepth Stack-storage of the current depth
      * @param root Root of the tree to generate permutations for
      */
-    void generatePermutations(List<ParseNode> result, Integer depth, Integer currentDepth, ParseNode root) {
-        result.add(root)
+    void generatePermutations(List<TransformedTree> result, Integer depth, Integer currentDepth, TransformedTree parentTree) {
+        // add an unmodified version
+        result.add(new TransformedTree(
+                root: parentTree.root,
+                ancestors: [new Tuple2<String, ParseNode>('identity', parentTree.root)]
+        ))
         Closure visitor = { ParseNode p ->
             // For each possible transform, see if it applies to this node. If so, transform
             // the corresponding node on a copy tree and add the result to the permutation list
-            canApplyTransform.each { Closure<Boolean> check, Closure<ParseNode> transform ->
+            canApplyTransform.each { Tuple t ->
+                String name = (String) t.get(0)
+                Closure<Boolean> check = (Closure<Boolean>) t.get(1)
+                Closure<ParseNode> transform = (Closure<ParseNode>) t.get(2)
                 if (check(p)) {
-                    ParseNode transformedTree = createTransformedTree(root, p, transform)
+                    TransformedTree transformedTree = new TransformedTree(
+                            ancestors: parentTree.ancestors.collect(),
+                            root: createTransformedTree(parentTree.root, p, transform)
+                    )
+                    transformedTree.ancestors.add(new Tuple2<String,ParseNode>(name, parentTree.root))
                     result.add(transformedTree)
                     if (currentDepth < depth) { // recurse if desired
                         // traverse from the root of the transformed tree
@@ -98,7 +120,7 @@ class BooleanAlgebraSolverService {
                 }
             }
         }
-        root.depthFirstPostTraversal(visitor)
+        parentTree.root.depthFirstPostTraversal(visitor)
     }
 
     /**
