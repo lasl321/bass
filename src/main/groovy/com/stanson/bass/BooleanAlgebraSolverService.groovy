@@ -191,34 +191,37 @@ class BooleanAlgebraSolverService {
     }
 
     /**
-     * True if this input is a composite containing two elements, one of which is a composite of the opposite type
-     * containing the other element.
+     * True if this input is a composite containing a composite of the opposite type
+     * containing another element.
      *
      * @param input
      * @return
      */
     Boolean canAbsorbComposite(ParseNode input) {
-        if (input.type in COMPOSITES && input.children.size() == 2) {
-            ParseNode oppositeComposite = input.children.find {
-                it.type == COMPOSITE_FLIP.get(input.type)
+        if (input.type in COMPOSITES && input.children.size() >= 2) {
+            List<ParseNode> oppositeComposites = input.children.findAll {
+                it.type == COMPOSITE_FLIP.get(input.type) && it.children
             }
-            if (oppositeComposite) {
-                List<ParseNode> copiedChildren = input.children.collect()
-                copiedChildren.removeElement(oppositeComposite)
-                ParseNode otherChild = copiedChildren.head()
-                if (otherChild in oppositeComposite.children) {
-                    return true
-                }
+            Set<ParseNode> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<ParseNode>
+
+            return oppositeComposites.any { ParseNode opposite ->
+                otherChildren.intersect(opposite.children as Set<ParseNode>)
             }
         }
         return false
     }
 
     ParseNode absorbComposite(ParseNode input) {
-        ParseNode oppositeComposite = input.children.find {
-            it.type == COMPOSITE_FLIP.get(input.type)
+        List<ParseNode> oppositeComposites = input.children.findAll {
+            it.type == COMPOSITE_FLIP.get(input.type) && it.children
         }
-        input.removeChild(oppositeComposite)
+
+        Set<ParseNode> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<ParseNode>
+        oppositeComposites.each { ParseNode opposite ->
+            if (otherChildren.intersect(opposite.children as Set<ParseNode>)) {
+                input.removeChild(opposite)
+            }
+        }
         input
     }
 

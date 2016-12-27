@@ -511,4 +511,58 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         service.absorbComposite(absorption1Case) == new ParseNode(ParseNodeType.ALL).addChildren(predicateA)
         service.absorbComposite(absorption2Case) == new ParseNode(ParseNodeType.ANY).addChildren(predicateA)
     }
+
+    void 'should handle advanced absorption cases'() {
+        given:
+        ParseNode caseOne = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'E'),
+
+                ),
+        )
+        ParseNode expectedOne = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B')
+        )
+
+        ParseNode caseTwo = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+
+                ),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'D'),
+
+                ),
+                new ParseNode(ParseNodeType.ANY).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'E'),
+
+                ),
+        )
+        ParseNode expectedTwo = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B')
+        )
+        expect:
+        service.absorbComposite(caseOne) == expectedOne
+        service.absorbComposite(caseTwo) == expectedTwo
+    }
 }
