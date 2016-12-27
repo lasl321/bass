@@ -62,7 +62,7 @@ class BooleanAlgebraSolverService {
         List<TransformedTree> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
-            log.info('Working on ' + BassDriver.prettyPrint(workingTree.root))
+            log.debug('Working on ' + BassDriver.prettyPrint(workingTree.root))
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
             if (transformedTrees.size() == 1) {
                 workingTree = transformedTrees.get(0)
@@ -71,9 +71,9 @@ class BooleanAlgebraSolverService {
             }
 
             log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree.root))
-            log.info('Ancestry of this permutation is:')
+            log.debug('Ancestry of this permutation is:')
             workingTree.ancestors.each { String transformName, ParseNode oldRoot ->
-                log.info("Applied ${transformName} to ${BassDriver.prettyPrint(oldRoot)}")
+                log.debug("Applied ${transformName} to ${BassDriver.prettyPrint(oldRoot)}")
             }
             Integer newDepth = calculateTreeDepth(workingTree.root)
             Integer newExpressionCount = countExpressions(workingTree.root)
@@ -285,28 +285,36 @@ class BooleanAlgebraSolverService {
      */
     ParseNode extractCommonTerm(ParseNode input) {
         // Remove everything that's being pushed down a level
-        List<ParseNode> oppositeCompositeKids = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
-        oppositeCompositeKids.each { input.removeChild(it) }
+        List<ParseNode> oppositeComposites = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
+        oppositeComposites.each { input.removeChild(it) }
 
         // Get the common term (just take the first)
-        ParseNode commonTerm = oppositeCompositeKids.collect {
+        ParseNode commonTerm = oppositeComposites.collect {
             it.children as Set<ParseNode>
         }.inject {
             Set<ParseNode> intersection, Set<ParseNode> compositeEntries -> intersection.intersect(compositeEntries)
         }.head()
         // Make the new composites
         ParseNode newOpposite = new ParseNode(COMPOSITE_FLIP.get(input.type))
-        newOpposite.addChild(commonTerm) // common term goes here
-        input.addChild(newOpposite) // this is attached to the input
 
         ParseNode newSame = new ParseNode(input.type)
 
         // Now add the opposite composite grandkids to the 'newSame' collection
-        List<ParseNode> remainingGrandkids = oppositeCompositeKids.collectMany {
-            it.children.findAll { it != commonTerm }
+        oppositeComposites.each {
+            it.removeChild(commonTerm)
+            // if this is a degenerate composite, just add the one remaining child
+            if (it.children.size() == 1) {
+                newSame.addChild(it.children.head())
+            } else if (it.children.size() > 1) {
+                newSame.addChild(it)
+            } // otherwise it's empty and should be ignored.
         }
-        remainingGrandkids.each { newSame.addChild(it) }
+
+        newOpposite.addChild(commonTerm) // common term goes here
         newOpposite.addChild(newSame) // all the kids added go under the new opposite
+
+        // This is added to the input
+        input.addChild(newOpposite)
         input
     }
 

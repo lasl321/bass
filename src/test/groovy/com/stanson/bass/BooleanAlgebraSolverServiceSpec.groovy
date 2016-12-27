@@ -51,6 +51,46 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         service.extractCommonTerm(input) == expected
     }
 
+    void 'Distributive Law, second case'() {
+        // This test is based on a failure I saw during development.
+        given:
+        // D + AB + BC(B + C)
+        // Factoring out B
+        //  D + B(A + C(B + C))
+        ParseNode input = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                ),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                        new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        new ParseNode(ParseNodeType.ANY).addChildren(
+                                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                        )
+                ),
+        )
+        ParseNode expected = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+                new ParseNode(ParseNodeType.ALL).addChildren(
+                    new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                    new ParseNode(ParseNodeType.ANY).addChildren(
+                            new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                            new ParseNode(ParseNodeType.ALL).addChildren(
+                                    new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                                    new ParseNode(ParseNodeType.ANY).addChildren(
+                                            new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                                            new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                                    )
+                            )
+                    )
+                )
+        )
+        expect:
+        service.extractCommonTerm(input) == expected
+    }
 
     void 'simplifies Distributive Law (2nd Form)'() {
         given:
