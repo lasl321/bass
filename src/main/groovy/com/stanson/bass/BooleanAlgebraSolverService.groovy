@@ -18,6 +18,16 @@ class BooleanAlgebraSolverService {
         List<Tuple2<String,ParseNode>> ancestors = []
         ParseNode root
     }
+
+    static final List<ParseNodeType> CONSTANT_BOOL = [
+            ParseNodeType.TRUE, ParseNodeType.FALSE
+    ]
+
+    static final Map<ParseNodeType, ParseNodeType> CONSTANT_BOOL_FLIP = [
+            (ParseNodeType.TRUE): ParseNodeType.FALSE,
+            (ParseNodeType.FALSE): ParseNodeType.TRUE,
+    ]
+
     static final List<ParseNodeType> COMPOSITES = [
             ParseNodeType.ANY, ParseNodeType.ALL
     ]
@@ -36,6 +46,9 @@ class BooleanAlgebraSolverService {
             new Tuple('Common Term Extraction', this.&canExtractCommonTerm, this.&extractCommonTerm),
             new Tuple('Term Distribution', this.&canDistributeTerm, this.&distributeTerm),
             new Tuple('Absorption 1 or 2', this.&canAbsorbComposite, this.&absorbComposite),
+            new Tuple('Composite complement', this.&containsComplement, this.&simplifyComplement),
+            new Tuple('Basic complement', this.&containsBasicComplement, this.&simplifyBasicComplement),
+            new Tuple('Composite with constant', this.&isCompositeWithConstant, this.&simplifyCompositeWithConstant),
     ]
 
     Integer lookAhead = 1
@@ -71,7 +84,7 @@ class BooleanAlgebraSolverService {
             }
 
             log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree.root))
-            log.debug('Ancestry of this permutation is:')
+            log.info('Ancestry of this permutation is:')
             workingTree.ancestors.each { String transformName, ParseNode oldRoot ->
                 log.debug("Applied ${transformName} to ${BassDriver.prettyPrint(oldRoot)}")
             }
@@ -132,16 +145,16 @@ class BooleanAlgebraSolverService {
      */
     ParseNode createTransformedTree(ParseNode root, ParseNode target, Closure<ParseNode> transform) {
         ParseNode result = new ParseNode(root.type, root.data)
-        root.children.each { ParseNode child ->
-            ParseNode childCopy = createTransformedTree(child, target, transform)
-            if (child == target) {
-                childCopy = transform(childCopy)
-            }
-            if (childCopy) { // a pruning could have occurred
-                result.addChild(childCopy)
-            } else {
-                result.removeChild(target)
-            }
+        result.children = root.children.collect()
+        if (result && result.children) {
+            result.children = result.children.collect { ParseNode child ->
+                createTransformedTree(child, target, transform)
+            }.findAll { it != null }
+        }
+
+        if (root == target) {
+            // assume the transform handles child updates
+            result = transform(result)
         }
         result
     }
@@ -356,6 +369,7 @@ class BooleanAlgebraSolverService {
 
     ParseNode collapseComposite(ParseNode input) {
         List<ParseNode> redundantKids = input.children.findAll { it.type == input.type }
+        redundantKids.each { input.removeChild(it) }
         List<ParseNode> grandKids = redundantKids.collectMany { it.children }
         grandKids.each { input.addChild(it) }
         input
@@ -401,7 +415,7 @@ class BooleanAlgebraSolverService {
     Boolean doesDeMorgansLawApply(ParseNode input) {
         // If the input is a negation with a composite containing two elements
         Boolean caseOne = input.type == ParseNodeType.NOT &&
-                input.children.head() &&
+                input.children &&
                 input.children.head().type in COMPOSITES &&
                 input.children.head().children.size() == 2
         // or if the input is a composite with two negated elements
@@ -437,5 +451,54 @@ class BooleanAlgebraSolverService {
             )
         }
         result
+    }
+
+    Boolean containsBasicComplement(ParseNode input) {
+        List<ParseNode> nots = input.children.findAll { it.type == ParseNodeType.NOT }
+
+        nots.any { it.children && it.children.head().type in CONSTANT_BOOL }
+    }
+
+    ParseNode simplifyBasicComplement(ParseNode input) {
+        List<ParseNode> readyForAbsorption = input.children.findAll {
+            it.type == ParseNodeType.NOT && it.children && it.children.head().type in CONSTANT_BOOL
+        }
+        readyForAbsorption.each {
+            input.removeChild(it)
+            input.addChild(new ParseNode(CONSTANT_BOOL_FLIP.get(it.children.head().type)))
+        }
+
+        input
+    }
+
+    Boolean containsComplement(ParseNode input) {
+        if (input.type in COMPOSITES) {
+            Map<Boolean, List<ParseNode>> havesAndHaveNots = input.children.groupBy {  it.type == ParseNodeType.NOT }
+            Set<ParseNode> negatedChildren = havesAndHaveNots.get(true, []).collectMany { ParseNode p -> p.children } as Set
+            Set<ParseNode> otherChildren = havesAndHaveNots.get(false, []) as Set
+
+            if (negatedChildren.intersect(otherChildren)) { return true }
+        }
+        false
+    }
+
+    ParseNode simplifyComplement(ParseNode input) {
+        input.children.each { input.removeChild(it) }
+        // If we get here, it is known that the complement case exists. We just need to simplify it now
+        if (input.type == ParseNodeType.ANY) {
+            input.addChildren(new ParseNode(ParseNodeType.TRUE))
+        } else {
+            input.addChildren(new ParseNode(ParseNodeType.FALSE))
+        }
+    }
+
+    Boolean isCompositeWithConstant(ParseNode input) {
+        (input.type == ParseNodeType.ANY && input.children.find { it.type == ParseNodeType.TRUE }) ||
+                (input.type == ParseNodeType.ALL && input.children.find { it.type == ParseNodeType.FALSE })
+    }
+
+    ParseNode simplifyCompositeWithConstant(ParseNode input) {
+        input.type == ParseNodeType.ANY ?
+                new ParseNode(ParseNodeType.TRUE) : new ParseNode(ParseNodeType.FALSE)
     }
 }

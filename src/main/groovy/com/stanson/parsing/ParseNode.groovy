@@ -6,7 +6,7 @@ import groovy.transform.CompileStatic
  * This file provides a number of utilities to aid in the handling of parse
  * trees during the transformation process.
  */
-enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE }
+enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE }
 
 /**
  * A node holds data and zero or more references to children.

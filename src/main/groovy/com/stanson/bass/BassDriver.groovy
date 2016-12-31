@@ -126,6 +126,10 @@ class BassDriver {
             String representation = 'wtf'
             if (node.type == ParseNodeType.PREDICATE) {
                 representation = (node.data == null) ? 'O' : node.data.toString()[0]
+            } else if (node.type == ParseNodeType.FALSE) {
+                representation = 'F'
+            } else if (node.type == ParseNodeType.TRUE) {
+                representation = 'T'
             } else if (node.type == ParseNodeType.NULL) {
                 representation = 'X'
             } else if (node.type == ParseNodeType.ANY) {
@@ -141,8 +145,7 @@ class BassDriver {
             }
             if (node.type in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
                 result += ('(')
-            } else if (node.type in [ParseNodeType.NULL, ParseNodeType.PREDICATE]) {
-
+            } else if (node.type in [ParseNodeType.NULL, ParseNodeType.PREDICATE, ParseNodeType.TRUE, ParseNodeType.FALSE]) {
                 result += ("$representation")
             }
 

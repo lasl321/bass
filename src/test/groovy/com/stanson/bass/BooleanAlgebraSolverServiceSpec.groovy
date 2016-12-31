@@ -565,4 +565,57 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         service.absorbComposite(caseOne) == expectedOne
         service.absorbComposite(caseTwo) == expectedTwo
     }
+
+    void 'should simplify composite complements'() {
+        given:
+        ParseNode andNegation = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A')
+                )
+        )
+        ParseNode orNegation = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.NOT).addChildren(
+                        new ParseNode(ParseNodeType.PREDICATE, 'A')
+                )
+        )
+        expect:
+        service.solve(andNegation) == new ParseNode(ParseNodeType.FALSE)
+        service.solve(orNegation) == new ParseNode(ParseNodeType.TRUE)
+    }
+
+    void 'should simplify basic complements'() {
+        given:
+        ParseNode trueNegation = new ParseNode(ParseNodeType.NOT).addChildren(
+                new ParseNode(ParseNodeType.TRUE)
+        )
+        ParseNode falseNegation = new ParseNode(ParseNodeType.NOT).addChildren(
+                new ParseNode(ParseNodeType.FALSE)
+        )
+        expect:
+        service.solve(trueNegation) == new ParseNode(ParseNodeType.FALSE)
+        service.solve(falseNegation) == new ParseNode(ParseNodeType.TRUE)
+    }
+
+    void 'should simplify composites containing true or false'() {
+        given:
+        ParseNode andCase = new ParseNode(ParseNodeType.ALL).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.FALSE),
+                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+        )
+        ParseNode orCase = new ParseNode(ParseNodeType.ANY).addChildren(
+                new ParseNode(ParseNodeType.PREDICATE, 'A'),
+                new ParseNode(ParseNodeType.PREDICATE, 'B'),
+                new ParseNode(ParseNodeType.TRUE),
+                new ParseNode(ParseNodeType.PREDICATE, 'C'),
+                new ParseNode(ParseNodeType.PREDICATE, 'D'),
+        )
+        expect:
+        service.solve(andCase) == new ParseNode(ParseNodeType.FALSE)
+        service.solve(orCase) == new ParseNode(ParseNodeType.TRUE)
+    }
 }
