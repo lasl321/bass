@@ -1,5 +1,6 @@
 package com.stanson.bass
 
+import groovy.transform.TypeCheckingMode
 import groovy.util.logging.Log4j
 import groovy.transform.CompileStatic
 
@@ -22,7 +23,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     private final TreeLikeFactory<T> f
 
 
-    private static final class TransformedTree {
+    private static final class TransformedTree<T> {
         // transform name applied to the root yields the next ancestor (or this tree)
         List<Tuple2<String,T>> ancestors = []
         T root
@@ -85,13 +86,13 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
         T workingTreeRoot = f.newInstance(TreeLikeType.NULL, null).addChildren(input)
 //        T workingTree = f.newInstance(TreeLikeType.NULL, null)
 //        workingTree.addChildren(input)
-        TransformedTree workingTree = new TransformedTree(root: workingTreeRoot)
+        TransformedTree<T> workingTree = new TransformedTree(root: workingTreeRoot)
 
         Integer expressionCount = countExpressions(workingTree.root)
         Integer treeDepth = calculateTreeDepth(workingTree.root)
 
 
-        List<TransformedTree> transformedTrees = []
+        List<TransformedTree<T>> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
@@ -120,7 +121,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param root Root of the tree to generate permutations for
      */
     void generatePermutations(
-            List<TransformedTree> result, Integer depth, Integer currentDepth, TransformedTree parentTree) {
+            List<TransformedTree> result, Integer depth, Integer currentDepth, TransformedTree<T> parentTree) {
         // add an unmodified version
         result.add(new TransformedTree(
                 root: parentTree.root,
@@ -134,7 +135,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
                 Closure<Boolean> check = (Closure<Boolean>) t.get(1)
                 Closure<T> transform = (Closure<T>) t.get(2)
                 if (check(node)) {
-                    TransformedTree transformedTree = new TransformedTree(
+                    TransformedTree<T> transformedTree = new TransformedTree(
                             ancestors: parentTree.ancestors.collect(),
                             root: createTransformedTree(parentTree.root, node, transform)
                     )
@@ -168,7 +169,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
 
         if (root == target) {
             // assume the transform handles child updates
-            result = transform(result)
+            result = (T) transform(result)
         }
         result
     }
@@ -218,7 +219,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     /**
-     * True if this input is a composite containing a composite of the opposite type
+     * True if this input is a composite containing a composite of the opposite parseNodeType
      * containing another element.
      *
      * @param input
@@ -254,7 +255,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
 
     /**
      * True if this node is a composite containing at least one two children and at least one of them is a composite of
-     * the opposite type
+     * the opposite parseNodeType
      * @param input
      * @return
      */
@@ -274,7 +275,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
 
         T result = f.newInstance(COMPOSITE_FLIP.get(input.type), null)
         List<T> newTerms = childrenOfOpposite.collect { T oppositeChild ->
-            T newParent = f.newInstance(input.type, null) //new T(input.type)
+            T newParent = f.newInstance(input.type, null) //new T(input.parseNodeType)
             newParent.addChildren(oppositeChild) // intentionally breaks parent link
             otherChildren.each {
                 newParent.addChildren(f.fromExistingInstance(it)) // <-- copy is important here, otherwise parent link will break
@@ -287,20 +288,21 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     /**
-     * True if this node is a composite and more than one child of this node is of the opposite composite type
+     * True if this node is a composite and more than one child of this node is of the opposite composite parseNodeType
      * and those qualifying children share at least one common term.
      * @param input
      * @return
      */
+    @CompileStatic(TypeCheckingMode.SKIP)
     Boolean canExtractCommonTerm(T input) {
         if (input.type in COMPOSITES) {
             List<T> oppositeKids = input.children.findAll { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
             if (oppositeKids.size() > 1) {
                 // Get the children of each opposite kid as a Set, then check for a non-empty intersection between them
-                List<Set<T>> oppositeKidsChildren = oppositeKids.collect { it.children as Set<T> }
+                List<Set<T>> oppositeKidsChildren = oppositeKids.collect { T child -> child.children as Set<T> }
                 Set<T> intersection = oppositeKidsChildren.inject {
                     Set<T> intersection, Set<T> compositeEntries ->
-                        intersection.intersect(compositeEntries)
+                        (Set<T>) intersection.intersect(compositeEntries)
                 }
                 return !intersection.isEmpty()
             }
@@ -313,6 +315,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
+    @CompileStatic(TypeCheckingMode.SKIP)
     T extractCommonTerm(T input) {
         // Remove everything that's being pushed down a level
         List<T> oppositeComposites = input.children.findAll { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
@@ -371,13 +374,13 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     /**
-     * True if this node is a composite and contains children of the same composite type.
+     * True if this node is a composite and contains children of the same composite parseNodeType.
      *
      * @param input
      * @return
      */
     Boolean containsCollapsibleComposites(T input) {
-        // Input is a composite and contains children of the same composite type
+        // Input is a composite and contains children of the same composite parseNodeType
         input.type in COMPOSITES && input.children.findAll { T child -> child.type == input.type }
     }
 

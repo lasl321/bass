@@ -5,10 +5,10 @@ package com.stanson.bass
  */
 interface TreeLikeFactory<T extends TreeLike> {
     /**
-     * Given a TreeLike instance, return a new instance of the same type and with identical data. The children
+     * Given a TreeLike instance, return a new instance of the same parseNodeType and with identical data. The children
      * and parent links should not be copied.
      * @param other
-     * @return A new instance with the same type and data as the provided instance
+     * @return A new instance with the same parseNodeType and data as the provided instance
      */
     T fromExistingInstance(T other)
 

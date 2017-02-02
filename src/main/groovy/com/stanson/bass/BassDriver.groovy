@@ -3,11 +3,6 @@ package com.stanson.bass
 import com.stanson.parsing.ParseNode
 import com.stanson.parsing.ParseNodeType
 import groovy.util.logging.Log4j
-import org.apache.log4j.Appender
-import org.apache.log4j.ConsoleAppender
-import org.apache.log4j.Layout
-import org.apache.log4j.Level
-import org.apache.log4j.PatternLayout
 
 /**
  * Driver program for development purposes.
@@ -36,7 +31,7 @@ class BassDriver {
         Boolean areCongruent(ParseNode l, ParseNode r) {
             // Both are null or neither are null and their data and types match
             (l == null && r == null) ||
-                    (l != null && r != null && l.data == r.data && l.type == r.type)
+                    (l != null && r != null && l.data == r.data && l.parseNodeType == r.parseNodeType)
         }
 
         /**
@@ -63,13 +58,13 @@ class BassDriver {
                 (TreeLikeType.FALSE): ParseNodeType.FALSE
         ]
         /**
-         * Given a TreeLike instance, return a new instance of the same type and with identical data. The children
+         * Given a TreeLike instance, return a new instance of the same parseNodeType and with identical data. The children
          * and parent links should not be copied.
          * @param other
-         * @return A new instance with the same type and data as the provided instance
+         * @return A new instance with the same parseNodeType and data as the provided instance
          */
         ParseNode fromExistingInstance(ParseNode other) {
-            new ParseNode(other.type, other.data)
+            new ParseNode(other.parseNodeType, other.data)
         }
 
         /**
@@ -189,34 +184,34 @@ class BassDriver {
         printer = { ParseNode node ->
             // process myself, then each of my children
             String representation = 'unknown'
-            if (node.type == ParseNodeType.PREDICATE) {
+            if (node.parseNodeType == ParseNodeType.PREDICATE) {
                 representation = (node.data == null) ? 'O' : node.data.toString()[0]
-            } else if (node.type == ParseNodeType.FALSE) {
+            } else if (node.parseNodeType == ParseNodeType.FALSE) {
                 representation = 'F'
-            } else if (node.type == ParseNodeType.TRUE) {
+            } else if (node.parseNodeType == ParseNodeType.TRUE) {
                 representation = 'T'
-            } else if (node.type == ParseNodeType.NULL) {
+            } else if (node.parseNodeType == ParseNodeType.NULL) {
                 representation = 'X'
-            } else if (node.type == ParseNodeType.ANY) {
+            } else if (node.parseNodeType == ParseNodeType.ANY) {
                 representation = ' + '
-            } else if (node.type == ParseNodeType.ALL) {
+            } else if (node.parseNodeType == ParseNodeType.ALL) {
                 representation = ' * '
-            } else if (node.type == ParseNodeType.NOT) {
+            } else if (node.parseNodeType == ParseNodeType.NOT) {
                 representation = ' ¬'
             }
             String result = ''
-            if (node.type == ParseNodeType.NOT) {
+            if (node.parseNodeType == ParseNodeType.NOT) {
                 result += (representation)
             }
-            if (node.type in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
+            if (node.parseNodeType in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
                 result += ('(')
-            } else if (node.type in [ParseNodeType.NULL, ParseNodeType.PREDICATE, ParseNodeType.TRUE, ParseNodeType.FALSE]) {
+            } else if (node.parseNodeType in [ParseNodeType.NULL, ParseNodeType.PREDICATE, ParseNodeType.TRUE, ParseNodeType.FALSE]) {
                 result += ("$representation")
             }
 
             List<String> childRepresentations = node.children.collect { printer(it) }
             result += (childRepresentations.join(representation))
-            if (node.type in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
+            if (node.parseNodeType in [ParseNodeType.ANY, ParseNodeType.ALL, ParseNodeType.NOT]) {
                 result += (')')
             }
             return result

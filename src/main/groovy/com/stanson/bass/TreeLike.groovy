@@ -7,7 +7,7 @@ package com.stanson.bass
  */
 interface TreeLike<T extends TreeLike<T>> {
     /**
-     * Retrieve the type of this node.
+     * Retrieve the parseNodeType of this node.
      *
      * @return
      */
@@ -60,7 +60,7 @@ interface TreeLike<T extends TreeLike<T>> {
 
     /**
      * Visit each node in the subtree rooted at 'this' in a depth-first (pre order) manner.
-     * The provided closure should expect a single parameter of type T
+     * The provided closure should expect a single parameter of parseNodeType T
      * @param visitor
      */
     void depthFirstPreTraversal(Closure visitor)
@@ -68,7 +68,7 @@ interface TreeLike<T extends TreeLike<T>> {
 
     /**
      * Visit each node in the subtree rooted at 'this' in a depth-first (post order) manner.
-     * The provided closure should expect a single parameter of type T
+     * The provided closure should expect a single parameter of parseNodeType T
      * @param visitor
      */
     void depthFirstPostTraversal(Closure visitor)
