@@ -22,9 +22,74 @@ class BassDriver {
 
     }
 
+    static final class ParseNodeComparator implements TreeLikeComparator<ParseNode> {
+
+        /**
+         * Should return true if the node l has data that is semantically equivalent to the data of node r.
+         * This method should consider two nodes with the same data to be equivalent even if their subtrees or
+         * parents are different.
+         * This method should safely handle nulls.
+         * @param l
+         * @param r
+         * @return
+         */
+        Boolean areCongruent(ParseNode l, ParseNode r) {
+            // Both are null or neither are null and their data and types match
+            (l == null && r == null) ||
+                    (l != null && r != null && l.data == r.data && l.type == r.type)
+        }
+
+        /**
+         * Should return true if the two nodes are both congruent and have identical subtrees and parents.
+         * @param l
+         * @param r
+         * @return
+         */
+        Boolean areIdentical(ParseNode l, ParseNode r) {
+            areCongruent(l, r) && areCongruent(l.parent, r.parent) &&
+                    [l.children, r.children].transpose().every { a, b -> areCongruent(a, b) }
+        }
+    }
+
+
+    static final class ParseNodeFactory implements TreeLikeFactory<ParseNode> {
+        Map<TreeLikeType, ParseNodeType> typeMap = [
+                (TreeLikeType.NULL): ParseNodeType.NULL,
+                (TreeLikeType.OR): ParseNodeType.ANY,
+                (TreeLikeType.AND): ParseNodeType.ALL,
+                (TreeLikeType.NOT): ParseNodeType.NOT,
+                (TreeLikeType.PREDICATE): ParseNodeType.PREDICATE,
+                (TreeLikeType.TRUE): ParseNodeType.TRUE,
+                (TreeLikeType.FALSE): ParseNodeType.FALSE
+        ]
+        /**
+         * Given a TreeLike instance, return a new instance of the same type and with identical data. The children
+         * and parent links should not be copied.
+         * @param other
+         * @return A new instance with the same type and data as the provided instance
+         */
+        ParseNode fromExistingInstance(ParseNode other) {
+            new ParseNode(other.type, other.data)
+        }
+
+        /**
+         *
+         * @param type
+         * @param data
+         * @return
+         */
+        ParseNode newInstance(TreeLikeType type, Object data) {
+            new ParseNode(typeMap.get(type), data)
+        }
+    }
+
     void driverLogic() {
         log.info('Starting...')
-        BooleanAlgebraSolverService bass = new BooleanAlgebraSolverService(lookAhead: 3)
+        TreeLikeComparator<ParseNode> comparator = null
+        TreeLikeFactory<ParseNode> factory = null
+
+        BooleanAlgebraSolverService<ParseNode> bass =
+                new BooleanAlgebraSolverService(3, comparator, factory)
         // AB + BC(B + C)
         // Expect B(A + C)
         ParseNode easy = new ParseNode(ParseNodeType.ANY).addChildren(
@@ -123,7 +188,7 @@ class BassDriver {
         Closure printer
         printer = { ParseNode node ->
             // process myself, then each of my children
-            String representation = 'wtf'
+            String representation = 'unknown'
             if (node.type == ParseNodeType.PREDICATE) {
                 representation = (node.data == null) ? 'O' : node.data.toString()[0]
             } else if (node.type == ParseNodeType.FALSE) {
