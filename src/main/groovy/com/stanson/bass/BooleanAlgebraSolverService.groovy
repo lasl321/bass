@@ -1,6 +1,7 @@
 package com.stanson.bass
 
-import groovy.transform.TypeCheckingMode
+import com.stanson.parsing.ParseNode
+import com.stanson.parsing.ParseNodeType
 import groovy.util.logging.Log4j
 import groovy.transform.CompileStatic
 
@@ -11,40 +12,29 @@ import groovy.transform.CompileStatic
  */
 @Log4j
 @CompileStatic
-class BooleanAlgebraSolverService<T extends TreeLike> {
-    /**
-     * Required to compare nodes.
-     */
-    private final TreeLikeComparator<T> c
-
-    /**
-     * Used to make instances.
-     */
-    private final TreeLikeFactory<T> f
-
-
-    private static final class TransformedTree<T> {
+class BooleanAlgebraSolverService {
+    private static final class TransformedTree {
         // transform name applied to the root yields the next ancestor (or this tree)
-        List<Tuple2<String,T>> ancestors = []
-        T root
+        List<Tuple2<String,ParseNode>> ancestors = []
+        ParseNode root
     }
 
-    static final List<TreeLikeType> CONSTANT_BOOL = [
-            TreeLikeType.TRUE, TreeLikeType.FALSE
+    static final List<ParseNodeType> CONSTANT_BOOL = [
+            ParseNodeType.TRUE, ParseNodeType.FALSE
     ]
 
-    static final Map<TreeLikeType, TreeLikeType> CONSTANT_BOOL_FLIP = [
-            (TreeLikeType.TRUE): TreeLikeType.FALSE,
-            (TreeLikeType.FALSE): TreeLikeType.TRUE,
+    static final Map<ParseNodeType, ParseNodeType> CONSTANT_BOOL_FLIP = [
+            (ParseNodeType.TRUE): ParseNodeType.FALSE,
+            (ParseNodeType.FALSE): ParseNodeType.TRUE,
     ]
 
-    static final List<TreeLikeType> COMPOSITES = [
-            TreeLikeType.OR, TreeLikeType.AND
+    static final List<ParseNodeType> COMPOSITES = [
+            ParseNodeType.ANY, ParseNodeType.ALL
     ]
 
-    static final Map<TreeLikeType, TreeLikeType> COMPOSITE_FLIP = [
-            (TreeLikeType.OR): TreeLikeType.AND,
-            (TreeLikeType.AND): TreeLikeType.OR
+    static final Map<ParseNodeType, ParseNodeType> COMPOSITE_FLIP = [
+            (ParseNodeType.ANY): ParseNodeType.ALL,
+            (ParseNodeType.ALL): ParseNodeType.ANY
     ]
 
     private final List<Tuple> canApplyTransform = [
@@ -62,39 +52,30 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     ]
 
     Integer lookAhead = 1
-
-    BooleanAlgebraSolverService(Integer lookAhead, TreeLikeComparator<T> comparator, TreeLikeFactory<T> factory) {
-        if (!comparator) { throw new NullPointerException('Comparator must be provided') }
-        if (!factory) { throw new NullPointerException('Factory must be provided') }
-
-        this.lookAhead = lookAhead
-        this.c = comparator
-        this.f = factory
-    }
-
     /**
-     * Given a tree, attempt to return the simplest equivalent representation.
+     * Given a ParseNode tree, attempt to return the simplest equivalent representation.
      *
      * @param input
      * @return
      */
-    T solve(T input) {
+    ParseNode solve(ParseNode input) {
         // I wrap the input tree in a superfluous node here so that I don't need to do any weird gymnastics to have
         // a proper 'parent handle' when replacing children below. Consider the case when a transform should be applied
         // to the supplied input root - I would need some special case handling to detect the parentless node and update
         // the 'result' reference rather than keeping the logic uniform.
-        T workingTreeRoot = f.newInstance(TreeLikeType.NULL, null).addChildren(input)
-//        T workingTree = f.newInstance(TreeLikeType.NULL, null)
-//        workingTree.addChildren(input)
-        TransformedTree<T> workingTree = new TransformedTree(root: workingTreeRoot)
+
+        TransformedTree workingTree = new TransformedTree(
+                root: new ParseNode(ParseNodeType.NULL).addChildren(input),
+        )
 
         Integer expressionCount = countExpressions(workingTree.root)
         Integer treeDepth = calculateTreeDepth(workingTree.root)
 
 
-        List<TransformedTree<T>> transformedTrees = []
+        List<TransformedTree> transformedTrees = []
         Boolean progressMade = true
         while (progressMade) {
+            log.debug('Working on ' + BassDriver.prettyPrint(workingTree.root))
             generatePermutations(transformedTrees, lookAhead, 1, workingTree)
             if (transformedTrees.size() == 1) {
                 workingTree = transformedTrees.get(0)
@@ -102,6 +83,11 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
                 workingTree = transformedTrees.min { calculateTreeDepth(it.root) + countExpressions(it.root) }
             }
 
+            log.info('Selected this permutation: ' + BassDriver.prettyPrint(workingTree.root))
+            log.info('Ancestry of this permutation is:')
+            workingTree.ancestors.each { String transformName, ParseNode oldRoot ->
+                log.debug("Applied ${transformName} to ${BassDriver.prettyPrint(oldRoot)}")
+            }
             Integer newDepth = calculateTreeDepth(workingTree.root)
             Integer newExpressionCount = countExpressions(workingTree.root)
             progressMade = (newDepth < treeDepth) || (newExpressionCount < expressionCount)
@@ -120,26 +106,25 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param currentDepth Stack-storage of the current depth
      * @param root Root of the tree to generate permutations for
      */
-    void generatePermutations(
-            List<TransformedTree> result, Integer depth, Integer currentDepth, TransformedTree<T> parentTree) {
+    void generatePermutations(List<TransformedTree> result, Integer depth, Integer currentDepth, TransformedTree parentTree) {
         // add an unmodified version
         result.add(new TransformedTree(
                 root: parentTree.root,
-                ancestors: [new Tuple2<String, T>('identity', parentTree.root)]
+                ancestors: [new Tuple2<String, ParseNode>('identity', parentTree.root)]
         ))
-        Closure visitor = { T node ->
+        Closure visitor = { ParseNode p ->
             // For each possible transform, see if it applies to this node. If so, transform
             // the corresponding node on a copy tree and add the result to the permutation list
             canApplyTransform.each { Tuple t ->
                 String name = (String) t.get(0)
                 Closure<Boolean> check = (Closure<Boolean>) t.get(1)
-                Closure<T> transform = (Closure<T>) t.get(2)
-                if (check(node)) {
-                    TransformedTree<T> transformedTree = new TransformedTree(
+                Closure<ParseNode> transform = (Closure<ParseNode>) t.get(2)
+                if (check(p)) {
+                    TransformedTree transformedTree = new TransformedTree(
                             ancestors: parentTree.ancestors.collect(),
-                            root: createTransformedTree(parentTree.root, node, transform)
+                            root: createTransformedTree(parentTree.root, p, transform)
                     )
-                    transformedTree.ancestors.add(new Tuple2<String,T>(name, parentTree.root))
+                    transformedTree.ancestors.add(new Tuple2<String,ParseNode>(name, parentTree.root))
                     result.add(transformedTree)
                     if (currentDepth < depth) { // recurse if desired
                         // traverse from the root of the transformed tree
@@ -158,18 +143,18 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param transform
      * @return
      */
-    T createTransformedTree(T root, T target, Closure<T> transform) {
-        T result = f.fromExistingInstance(root)
+    ParseNode createTransformedTree(ParseNode root, ParseNode target, Closure<ParseNode> transform) {
+        ParseNode result = new ParseNode(root.type, root.data)
         result.children = root.children.collect()
         if (result && result.children) {
-            result.children = result.children.collect { T child ->
+            result.children = result.children.collect { ParseNode child ->
                 createTransformedTree(child, target, transform)
             }.findAll { it != null }
         }
 
         if (root == target) {
             // assume the transform handles child updates
-            result = (T) transform(result)
+            result = transform(result)
         }
         result
     }
@@ -180,9 +165,9 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param tree
      * @return
      */
-    Integer countExpressions(T tree) {
+    Integer countExpressions(ParseNode tree) {
         Integer count = 0
-        Closure counter = { T node ->
+        Closure counter = { ParseNode node ->
             count++
         }
         tree.breadthFirstTraversal(counter)
@@ -195,7 +180,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param tree
      * @return
      */
-    Integer calculateTreeDepth(T tree) {
+    Integer calculateTreeDepth(ParseNode tree) {
         depthCalculatorRecursion(tree, 0)
     }
 
@@ -206,9 +191,9 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param parentDepth
      * @return
      */
-    private Integer depthCalculatorRecursion(T node, Integer parentDepth) {
+    private Integer depthCalculatorRecursion(ParseNode node, Integer parentDepth) {
 
-        if (node.type == TreeLikeType.PREDICATE) {
+        if (node.type == ParseNodeType.PREDICATE) {
             return 1 + parentDepth
         } else {
             List<Integer> childPathDepths = node.children.collect {
@@ -219,34 +204,34 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     /**
-     * True if this input is a composite containing a composite of the opposite parseNodeType
+     * True if this input is a composite containing a composite of the opposite type
      * containing another element.
      *
      * @param input
      * @return
      */
-    Boolean canAbsorbComposite(T input) {
+    Boolean canAbsorbComposite(ParseNode input) {
         if (input.type in COMPOSITES && input.children.size() >= 2) {
-            List<T> oppositeComposites = input.children.findAll { T child ->
-                child.type == COMPOSITE_FLIP.get(input.type) && child.children
+            List<ParseNode> oppositeComposites = input.children.findAll {
+                it.type == COMPOSITE_FLIP.get(input.type) && it.children
             }
-            Set<T> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<T>
+            Set<ParseNode> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<ParseNode>
 
-            return oppositeComposites.any { T opposite ->
-                otherChildren.intersect(opposite.children as Set<T>)
+            return oppositeComposites.any { ParseNode opposite ->
+                otherChildren.intersect(opposite.children as Set<ParseNode>)
             }
         }
         return false
     }
 
-    T absorbComposite(T input) {
-        List<T> oppositeComposites = input.children.findAll { T child ->
-            child.type == COMPOSITE_FLIP.get(input.type) && child.children
+    ParseNode absorbComposite(ParseNode input) {
+        List<ParseNode> oppositeComposites = input.children.findAll {
+            it.type == COMPOSITE_FLIP.get(input.type) && it.children
         }
 
-        Set<T> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<T>
-        oppositeComposites.each { T opposite ->
-            if (otherChildren.intersect(opposite.children as Set<T>)) {
+        Set<ParseNode> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<ParseNode>
+        oppositeComposites.each { ParseNode opposite ->
+            if (otherChildren.intersect(opposite.children as Set<ParseNode>)) {
                 input.removeChild(opposite)
             }
         }
@@ -255,54 +240,53 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
 
     /**
      * True if this node is a composite containing at least one two children and at least one of them is a composite of
-     * the opposite parseNodeType
+     * the opposite type
      * @param input
      * @return
      */
-    Boolean canDistributeTerm(T input) {
+    Boolean canDistributeTerm(ParseNode input) {
         input.type in COMPOSITES && input.children.size() > 1 &&
-                input.children.find { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+                input.children.find { it.type == COMPOSITE_FLIP.get(input.type) }
     }
 
-    T distributeTerm(T input) {
-        T oppositeCompositeChild = input.children.find { T child ->
-            child.type == COMPOSITE_FLIP.get(input.type) }
+    ParseNode distributeTerm(ParseNode input) {
+        // Select an opposite composite child to distribute
+        ParseNode oppositeCompositeChild = input.children.find { it.type == COMPOSITE_FLIP.get(input.type) }
 
-        List<T> otherChildren = input.children.collect()
+        List<ParseNode> otherChildren = input.children.collect()
         otherChildren.remove(oppositeCompositeChild)
 
-        List<T> childrenOfOpposite = oppositeCompositeChild.children
+        List<ParseNode> childrenOfOpposite = oppositeCompositeChild.children
 
-        T result = f.newInstance(COMPOSITE_FLIP.get(input.type), null)
-        List<T> newTerms = childrenOfOpposite.collect { T oppositeChild ->
-            T newParent = f.newInstance(input.type, null) //new T(input.parseNodeType)
-            newParent.addChildren(oppositeChild) // intentionally breaks parent link
+        ParseNode result = new ParseNode(COMPOSITE_FLIP.get(input.type))
+        List<ParseNode> newTerms = childrenOfOpposite.collect { ParseNode oppositeChild ->
+            ParseNode newParent = new ParseNode(input.type)
+            newParent.addChild(oppositeChild) // intentionally breaks parent link
             otherChildren.each {
-                newParent.addChildren(f.fromExistingInstance(it)) // <-- copy is important here, otherwise parent link will break
+                newParent.addChild(it.shallowCopy()) // <-- copy is important here, otherwise parent link will break
             }
             newParent
         }
-        result.addChildren(newTerms)
+        newTerms.each { result.addChild(it) }
 
         result
     }
 
     /**
-     * True if this node is a composite and more than one child of this node is of the opposite composite parseNodeType
+     * True if this node is a composite and more than one child of this node is of the opposite composite type
      * and those qualifying children share at least one common term.
      * @param input
      * @return
      */
-    @CompileStatic(TypeCheckingMode.SKIP)
-    Boolean canExtractCommonTerm(T input) {
+    Boolean canExtractCommonTerm(ParseNode input) {
         if (input.type in COMPOSITES) {
-            List<T> oppositeKids = input.children.findAll { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+            List<ParseNode> oppositeKids = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
             if (oppositeKids.size() > 1) {
                 // Get the children of each opposite kid as a Set, then check for a non-empty intersection between them
-                List<Set<T>> oppositeKidsChildren = oppositeKids.collect { T child -> child.children as Set<T> }
-                Set<T> intersection = oppositeKidsChildren.inject {
-                    Set<T> intersection, Set<T> compositeEntries ->
-                        (Set<T>) intersection.intersect(compositeEntries)
+                List<Set<ParseNode>> oppositeKidsChildren = oppositeKids.collect { it.children as Set<ParseNode> }
+                Set<ParseNode> intersection = oppositeKidsChildren.inject {
+                    Set<ParseNode> intersection, Set<ParseNode> compositeEntries ->
+                        intersection.intersect(compositeEntries)
                 }
                 return !intersection.isEmpty()
             }
@@ -315,39 +299,38 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
-    @CompileStatic(TypeCheckingMode.SKIP)
-    T extractCommonTerm(T input) {
+    ParseNode extractCommonTerm(ParseNode input) {
         // Remove everything that's being pushed down a level
-        List<T> oppositeComposites = input.children.findAll { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+        List<ParseNode> oppositeComposites = input.children.findAll { it.type == COMPOSITE_FLIP.get(input.type) }
         oppositeComposites.each { input.removeChild(it) }
 
         // Get the common term (just take the first)
-        T commonTerm = oppositeComposites.collect {
-            it.children as Set<T>
+        ParseNode commonTerm = oppositeComposites.collect {
+            it.children as Set<ParseNode>
         }.inject {
-            Set<T> intersection, Set<T> compositeEntries -> intersection.intersect(compositeEntries)
+            Set<ParseNode> intersection, Set<ParseNode> compositeEntries -> intersection.intersect(compositeEntries)
         }.head()
         // Make the new composites
-        T newOpposite = f.newInstance(COMPOSITE_FLIP.get(input.type), null)
+        ParseNode newOpposite = new ParseNode(COMPOSITE_FLIP.get(input.type))
 
-        T newSame = f.newInstance(input.type, null)
+        ParseNode newSame = new ParseNode(input.type)
 
         // Now add the opposite composite grandkids to the 'newSame' collection
         oppositeComposites.each {
             it.removeChild(commonTerm)
             // if this is a degenerate composite, just add the one remaining child
             if (it.children.size() == 1) {
-                newSame.addChildren((T)it.children.head())
+                newSame.addChild(it.children.head())
             } else if (it.children.size() > 1) {
-                newSame.addChildren(it)
+                newSame.addChild(it)
             } // otherwise it's empty and should be ignored.
         }
 
-        newOpposite.addChildren(commonTerm) // common term goes here
-        newOpposite.addChildren(newSame) // all the kids added go under the new opposite
+        newOpposite.addChild(commonTerm) // common term goes here
+        newOpposite.addChild(newSame) // all the kids added go under the new opposite
 
         // This is added to the input
-        input.addChildren(newOpposite)
+        input.addChild(newOpposite)
         input
     }
 
@@ -356,7 +339,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
-    Boolean isIdempotentComposite(T input) {
+    Boolean isIdempotentComposite(ParseNode input) {
         if (input.type in COMPOSITES) {
             Integer uniqueChildCount = (input.children as Set).size()
             return uniqueChildCount != input.children.size()
@@ -364,31 +347,31 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
         return false
     }
 
-    T collapseIdempotentComposite(T input) {
+    ParseNode collapseIdempotentComposite(ParseNode input) {
         // Remove all children, add them back in via a set
-        List<T> children = input.children
+        List<ParseNode> children = input.children
         children.each { input.removeChild(it) }
 
-        (children as Set<T>).each { input.addChildren(it) }
+        (children as Set<ParseNode>).each { input.addChild(it) }
         input
     }
 
     /**
-     * True if this node is a composite and contains children of the same composite parseNodeType.
+     * True if this node is a composite and contains children of the same composite type.
      *
      * @param input
      * @return
      */
-    Boolean containsCollapsibleComposites(T input) {
-        // Input is a composite and contains children of the same composite parseNodeType
-        input.type in COMPOSITES && input.children.findAll { T child -> child.type == input.type }
+    Boolean containsCollapsibleComposites(ParseNode input) {
+        // Input is a composite and contains children of the same composite type
+        input.type in COMPOSITES && input.children.findAll { it.type == input.type }
     }
 
-    T collapseComposite(T input) {
-        List<T> redundantKids = input.children.findAll { T child -> child.type == input.type }
+    ParseNode collapseComposite(ParseNode input) {
+        List<ParseNode> redundantKids = input.children.findAll { it.type == input.type }
         redundantKids.each { input.removeChild(it) }
-        List<T> grandKids = redundantKids.collectMany { it.children }
-        grandKids.each { input.addChildren(it) }
+        List<ParseNode> grandKids = redundantKids.collectMany { it.children }
+        grandKids.each { input.addChild(it) }
         input
     }
 
@@ -397,15 +380,15 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
-    Boolean doubleNegationIsPresent(T input) {
-        input.type == TreeLikeType.NOT &&
+    Boolean doubleNegationIsPresent(ParseNode input) {
+        input.type == ParseNodeType.NOT &&
                 input.children &&
                 input.children.head() &&
-                ((T)input.children.head()).type == TreeLikeType.NOT
+                input.children.head().type == ParseNodeType.NOT
     }
 
-    T collapseDoubleNegation(T input) {
-        ((T)input.children.head()).children ? (T)((T)input.children.head()).children.head() : null
+    ParseNode collapseDoubleNegation(ParseNode input) {
+        input.children.head().children ? input.children.head().children.head() : null
     }
 
     /**
@@ -413,32 +396,32 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
-    Boolean isDegenerateComposite(T input) {
+    Boolean isDegenerateComposite(ParseNode input) {
         input.type in COMPOSITES && input.children.size() < 2
     }
 
 
-    T collapseDegenerateComposite(T input) {
-        input.children ? ((T)input.children.head()) : null
+    ParseNode collapseDegenerateComposite(ParseNode input) {
+        input.children ? input.children.head() : null
     }
 
     /**
-     * Returns true if the subtree rooted at the provided T appears to be a case in which
+     * Returns true if the subtree rooted at the provided ParseNode appears to be a case in which
      * DeMorgan's Law can be applied.
      *
      * @param input
      * @return
      */
-    Boolean doesDeMorgansLawApply(T input) {
+    Boolean doesDeMorgansLawApply(ParseNode input) {
         // If the input is a negation with a composite containing two elements
-        Boolean caseOne = input.type == TreeLikeType.NOT &&
+        Boolean caseOne = input.type == ParseNodeType.NOT &&
                 input.children &&
-                ((T)input.children.head()).type in COMPOSITES &&
-                ((T)input.children.head()).children.size() == 2
+                input.children.head().type in COMPOSITES &&
+                input.children.head().children.size() == 2
         // or if the input is a composite with two negated elements
         Boolean caseTwo = input.type in COMPOSITES &&
                 input.children.size() == 2 &&
-                input.children.every { T child -> child.type == TreeLikeType.NOT }
+                input.children.every { it.type == ParseNodeType.NOT }
         caseOne || caseTwo
     }
 
@@ -447,80 +430,75 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @param input
      * @return
      */
-    T applyDeMorgansLaw(T input) {
-        T result
+    ParseNode applyDeMorgansLaw(ParseNode input) {
+        ParseNode result
         // We can assume DeMorgan's does apply here, so the case determination is simple
         if (input.type in COMPOSITES) { // Composite of two negated elements -> negation of opposite composite with two
-            T elementOne = ((T)input.children[0]).children[0] // first negation's child
-            T elementTwo = ((T)input.children[1]).children[0] // second negation's child
+            ParseNode elementOne = input.children[0].children[0] // first negation's child
+            ParseNode elementTwo = input.children[1].children[0] // second negation's child
 
-            result = f.newInstance(TreeLikeType.NOT, null).addChildren(
-                    f.newInstance(COMPOSITE_FLIP.get(input.type), null).addChildren(elementOne, elementTwo))
+            result = new ParseNode(ParseNodeType.NOT).addChildren(
+                    new ParseNode(COMPOSITE_FLIP.get(input.type)).addChildren(elementOne, elementTwo)
+            )
         } else { // Negation of composite with two -> Opposite composite of two negations
-            T composite = (T) input.children[0]
-            T elementOne = (T) composite.children[0] // negation's child's first element
-            T elementTwo = (T) composite.children[1] // negation's child's second element
+            ParseNode composite = input.children[0]
+            ParseNode elementOne = composite.children[0] // negation's child's first element
+            ParseNode elementTwo = composite.children[1] // negation's child's second element
 
-            result = f.newInstance(COMPOSITE_FLIP.get(composite.type), null).addChildren(
-                    f.newInstance(TreeLikeType.NOT, null).addChildren(elementOne),
-                    f.newInstance(TreeLikeType.NOT, null).addChildren(elementTwo),
+            result = new ParseNode(COMPOSITE_FLIP.get(composite.type)).addChildren(
+                    new ParseNode(ParseNodeType.NOT).addChildren(elementOne),
+                    new ParseNode(ParseNodeType.NOT).addChildren(elementTwo)
             )
         }
-        (T)result
+        result
     }
 
-    Boolean containsBasicComplement(T input) {
-        List<T> nots = input.children.findAll { T child -> child.type == TreeLikeType.NOT }
+    Boolean containsBasicComplement(ParseNode input) {
+        List<ParseNode> nots = input.children.findAll { it.type == ParseNodeType.NOT }
 
-        nots.any { it.children && ((T)it.children.head()).type in CONSTANT_BOOL }
+        nots.any { it.children && it.children.head().type in CONSTANT_BOOL }
     }
 
-    T simplifyBasicComplement(T input) {
-        List<T> readyForAbsorption = input.children.findAll { T child ->
-            child.type == TreeLikeType.NOT && child.children && ((T)child.children.head()).type in CONSTANT_BOOL
+    ParseNode simplifyBasicComplement(ParseNode input) {
+        List<ParseNode> readyForAbsorption = input.children.findAll {
+            it.type == ParseNodeType.NOT && it.children && it.children.head().type in CONSTANT_BOOL
         }
         readyForAbsorption.each {
             input.removeChild(it)
-            input.addChildren(
-                    f.newInstance(CONSTANT_BOOL_FLIP.get(((T)it.children.head()).type), null)
-            )
+            input.addChild(new ParseNode(CONSTANT_BOOL_FLIP.get(it.children.head().type)))
         }
 
         input
     }
 
-    Boolean containsComplement(T input) {
+    Boolean containsComplement(ParseNode input) {
         if (input.type in COMPOSITES) {
-            Map<Boolean, List<T>> havesAndHaveNots = input.children.groupBy { T child -> child.type == TreeLikeType.NOT }
-            Set<T> negatedChildren = havesAndHaveNots.get(true, []).collectMany { T p -> p.children } as Set
-            Set<T> otherChildren = havesAndHaveNots.get(false, []) as Set
+            Map<Boolean, List<ParseNode>> havesAndHaveNots = input.children.groupBy {  it.type == ParseNodeType.NOT }
+            Set<ParseNode> negatedChildren = havesAndHaveNots.get(true, []).collectMany { ParseNode p -> p.children } as Set
+            Set<ParseNode> otherChildren = havesAndHaveNots.get(false, []) as Set
 
             if (negatedChildren.intersect(otherChildren)) { return true }
         }
         false
     }
 
-    T simplifyComplement(T input) {
+    ParseNode simplifyComplement(ParseNode input) {
         input.children.each { input.removeChild(it) }
         // If we get here, it is known that the complement case exists. We just need to simplify it now
-        if (input.type == TreeLikeType.OR) {
-            input.addChildren(
-                    f.newInstance(TreeLikeType.TRUE, null)
-            )
+        if (input.type == ParseNodeType.ANY) {
+            input.addChildren(new ParseNode(ParseNodeType.TRUE))
         } else {
-            input.addChildren(
-                    f.newInstance(TreeLikeType.FALSE, null)
-            )
+            input.addChildren(new ParseNode(ParseNodeType.FALSE))
         }
     }
 
-    Boolean isCompositeWithConstant(T input) {
-        (input.type == TreeLikeType.OR && input.children.find { T child -> child.type == TreeLikeType.TRUE }) ||
-                (input.type == TreeLikeType.AND && input.children.find { T child -> child.type == TreeLikeType.FALSE })
+    Boolean isCompositeWithConstant(ParseNode input) {
+        (input.type == ParseNodeType.ANY && input.children.find { it.type == ParseNodeType.TRUE }) ||
+                (input.type == ParseNodeType.ALL && input.children.find { it.type == ParseNodeType.FALSE })
     }
 
-    T simplifyCompositeWithConstant(T input) {
-        input.type == TreeLikeType.OR ?
-                f.newInstance(TreeLikeType.TRUE, null) : f.newInstance(TreeLikeType.FALSE, null)
+    ParseNode simplifyCompositeWithConstant(ParseNode input) {
+        input.type == ParseNodeType.ANY ?
+                new ParseNode(ParseNodeType.TRUE) : new ParseNode(ParseNodeType.FALSE)
     }
 }

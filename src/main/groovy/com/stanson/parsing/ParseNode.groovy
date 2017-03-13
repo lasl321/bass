@@ -1,7 +1,5 @@
 package com.stanson.parsing
 
-import com.stanson.bass.TreeLike
-import com.stanson.bass.TreeLikeType
 import groovy.transform.CompileStatic
 
 /**
@@ -18,22 +16,9 @@ enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE }
  * be the same.
  */
 @CompileStatic
-class ParseNode implements TreeLike<ParseNode> {
+class ParseNode {
     /** Short-hand to determine what this node represents. */
-    ParseNodeType parseNodeType = ParseNodeType.NULL
-
-    TreeLikeType getType() {
-        Map<ParseNodeType, TreeLikeType> typeMap = [
-                (ParseNodeType.NULL): (TreeLikeType.NULL),
-                (ParseNodeType.ANY): (TreeLikeType.OR),
-                (ParseNodeType.ALL): (TreeLikeType.AND),
-                (ParseNodeType.NOT): (TreeLikeType.NOT),
-                (ParseNodeType.PREDICATE): (TreeLikeType.PREDICATE),
-                (ParseNodeType.TRUE): (TreeLikeType.TRUE),
-                (ParseNodeType.FALSE): (TreeLikeType.FALSE)
-        ]
-        typeMap.get(this.type)
-    }
+    ParseNodeType type = ParseNodeType.NULL
     /** Holds a reference to whatever data is desired. */
     def data
 
@@ -46,15 +31,15 @@ class ParseNode implements TreeLike<ParseNode> {
      *  adding a validation to check for duplicate predicate IDs, I realized that the parse node
      *  doesn't support duplicate children. We were seeing this exact behavior on prod, which
      *  means that it can happen, but the object that gets transformed will not reflect the data
-     *  that was included. Since JSON has no notion of a set parseNodeType, I've chosen to update this
-     *  data structure to not use a set parseNodeType either. Now, validations and other breakage can
+     *  that was included. Since JSON has no notion of a set type, I've chosen to update this
+     *  data structure to not use a set type either. Now, validations and other breakage can
      *  occur in response to bad data, rather than silently hiding it while confusing the user
      *  on the front end.
      */
     List<ParseNode> children = []
 
     ParseNode(ParseNodeType type = ParseNodeType.NULL, def data = null) {
-        this.parseNodeType = type
+        this.type = type
         this.data = data
     }
 
@@ -66,10 +51,6 @@ class ParseNode implements TreeLike<ParseNode> {
      */
     ParseNode addChildren(ParseNode... children) {
         children.each { ParseNode child -> this.addChild(child) }
-        this
-    }
-    ParseNode addChildren(Iterable<ParseNode> children) {
-        children.each { this.addChild(it) }
         this
     }
 
@@ -96,16 +77,12 @@ class ParseNode implements TreeLike<ParseNode> {
         child.parent = null
     }
 
-    ParseNode removeChild(Integer i) {
-        children.remove(i)
-    }
-
     /**
      * Computes and returns the hashcode of the subtree formed by interpreting this node as the root.
      */
     int hashCode() {
         int result = 31
-        result = 17 * result + (parseNodeType ? parseNodeType.hashCode() : 0)
+        result = 17 * result + (type ? type.hashCode() : 0)
         // Need '!= null' check as '0' is a valid, but falsy data value
         result = 17 * result + (data != null ? data.hashCode() : 0)
         result = 17 * result + children.hashCode()
@@ -118,7 +95,7 @@ class ParseNode implements TreeLike<ParseNode> {
     boolean equals(Object obj) {
         if (!(obj instanceof ParseNode)) { return false }
         ParseNode that = obj as ParseNode
-        return this.parseNodeType == that.parseNodeType &&
+        return this.type == that.type &&
                 this.data == that.data &&
                 this.children.size() == that.children.size() &&
                 (this.children as Set<ParseNode>) == (that.children as Set<ParseNode>)
@@ -128,7 +105,7 @@ class ParseNode implements TreeLike<ParseNode> {
 
     protected String toStringHelper(String indent) {
         String dataString = this.data ? "${this.data}" : 'NODATA'
-        String result = "${indent} ${this.parseNodeType} (${dataString})\n"
+        String result = "${indent} ${this.type} (${dataString})\n"
         result += this.children.collect {
             it.toStringHelper("${indent}>")
         }.join(",")
@@ -158,7 +135,7 @@ class ParseNode implements TreeLike<ParseNode> {
                 newData = ((List) node.data).collect()
             }
         }
-        ParseNode result = new ParseNode(node.parseNodeType, newData)
+        ParseNode result = new ParseNode(node.type, newData)
         node.children.each { child -> result.addChild(treeCopy(child, deepCopy)) }
         result
     }
