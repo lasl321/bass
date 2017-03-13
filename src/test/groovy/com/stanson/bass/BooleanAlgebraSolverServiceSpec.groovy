@@ -2,7 +2,7 @@ package com.stanson.bass
 
 import com.stanson.parsing.BasicNode
 import com.stanson.parsing.BasicNodeFactory
-import com.stanson.parsing.ParseNodeType
+import com.stanson.parsing.BaseNodeType
 import spock.lang.*
 
 /**
@@ -21,31 +21,31 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'simplifies Distributive Law'() {
         given:
         // (A AND B) OR (A AND C) OR (A AND D) OR E -> E OR (A AND (B OR C OR D))
-        BasicNode input = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'E'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode input = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'E'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C')
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C')
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D')
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D')
                 ),
         )
 
 
-        BasicNode expected = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'E'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                    new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                    new BasicNode(ParseNodeType.ANY).addChildren(
-                            new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                            new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                            new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode expected = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'E'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                    new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                    new BasicNode(BaseNodeType.ANY).addChildren(
+                            new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                            new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                            new BasicNode(BaseNodeType.PREDICATE, 'D'),
                     )
                 )
         )
@@ -59,32 +59,32 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
         // D + AB + BC(B + C)
         // Factoring out B
         //  D + B(A + C(B + C))
-        BasicNode input = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'D'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode input = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'D'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         )
                 ),
         )
-        BasicNode expected = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'D'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                    new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                    new BasicNode(ParseNodeType.ANY).addChildren(
-                            new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                            new BasicNode(ParseNodeType.ALL).addChildren(
-                                    new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                                    new BasicNode(ParseNodeType.ANY).addChildren(
-                                            new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                            new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode expected = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'D'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                    new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                    new BasicNode(BaseNodeType.ANY).addChildren(
+                            new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                            new BasicNode(BaseNodeType.ALL).addChildren(
+                                    new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                                    new BasicNode(BaseNodeType.ANY).addChildren(
+                                            new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                            new BasicNode(BaseNodeType.PREDICATE, 'C'),
                                     )
                             )
                     )
@@ -97,28 +97,28 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'simplifies Distributive Law (2nd Form)'() {
         given:
         // (A OR B) AND (A OR C) AND (A OR D) -> A OR (B AND C AND D)
-        BasicNode input = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode input = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 ),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 ),
         )
 
-        BasicNode expected = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode expected = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 )
             )
         )
@@ -131,13 +131,13 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'simplifies Involution Law'() {
         given:
         // NOT NOT A -> A
-        BasicNode input = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode input = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 )
         )
 
-        BasicNode expected = new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode expected = new BasicNode(BaseNodeType.PREDICATE, 'A')
         when:
         BasicNode result = service.solve(input)
         then:
@@ -146,23 +146,23 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'simplifies Idempotent Law'() {
         given:
-        BasicNode andVersion = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode andVersion = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
         )
-        BasicNode orVersion = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode orVersion = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
         )
-        BasicNode expectedAnd = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode expectedAnd = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B')
         )
-        BasicNode expectedOr = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode expectedOr = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B')
         )
         expect:
         service.solve(andVersion) == expectedAnd
@@ -172,40 +172,40 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'identifies cases for DeMorgans Law'() {
         given:
         // NOT (A AND B)
-        BasicNode demorgansCaseOneA = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode demorgansCaseOneA = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
         // NOT (A OR B)
-        BasicNode demorgansCaseOneB = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode demorgansCaseOneB = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
         // (NOT A) OR (NOT B)
-        BasicNode demorgansCaseTwoA = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode demorgansCaseTwoA = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
         // (NOT A) AND (NOT B)
-        BasicNode demorgansCaseTwoB = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode demorgansCaseTwoB = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
-        BasicNode noMatch = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode noMatch = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
         )
         expect:
         service.doesDeMorgansLawApply(demorgansCaseOneA)
@@ -219,33 +219,33 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'properly applies DeMorgans Law'() {
         given:
         // NOT (A AND B) -> (NOT A) OR (NOT B)
-        BasicNode formOneA = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode formOneA = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
-        BasicNode formOneB = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode formOneB = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
         // NOT (A OR B) -> (NOT A) AND (NOT B)
-        BasicNode formTwoA = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode formTwoA = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
-        BasicNode formTwoB = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode formTwoB = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B')
                 )
         )
         expect:
@@ -259,30 +259,30 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'simplifies Associative Law'() {
         given:
-        BasicNode formOne = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C')
+        BasicNode formOne = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C')
                 )
         )
-        BasicNode expectedOne = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.PREDICATE, 'C')
+        BasicNode expectedOne = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.PREDICATE, 'C')
         )
 
-        BasicNode formTwo = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C')
+        BasicNode formTwo = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C')
                 )
         )
-        BasicNode expectedTwo = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.PREDICATE, 'C')
+        BasicNode expectedTwo = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.PREDICATE, 'C')
         )
 
         when:
@@ -295,19 +295,19 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should calculate tree depth'() {
         given:
-        BasicNode caseOne = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'Depth 3')
+        BasicNode caseOne = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'Depth 3')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.ALL).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'Depth 4')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.ALL).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'Depth 4')
                         )
                 )
         )
-        BasicNode caseTwo = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'Depth 3')
+        BasicNode caseTwo = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'Depth 3')
                 )
         )
         expect:
@@ -318,10 +318,10 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should reduce degenerate composites'() {
         given:
-        BasicNode predicate = new BasicNode(ParseNodeType.PREDICATE, 'A')
-        BasicNode degenerateAnd = new BasicNode(ParseNodeType.ALL).addChildren(factory.fromPrototypeSubtree(predicate))
-        BasicNode degenerateOr = new BasicNode(ParseNodeType.ANY).addChildren(factory.fromPrototypeSubtree(predicate))
-        BasicNode negationIsOK = new BasicNode(ParseNodeType.NOT).addChildren(factory.fromPrototypeSubtree(predicate))
+        BasicNode predicate = new BasicNode(BaseNodeType.PREDICATE, 'A')
+        BasicNode degenerateAnd = new BasicNode(BaseNodeType.ALL).addChildren(factory.fromPrototypeSubtree(predicate))
+        BasicNode degenerateOr = new BasicNode(BaseNodeType.ANY).addChildren(factory.fromPrototypeSubtree(predicate))
+        BasicNode negationIsOK = new BasicNode(BaseNodeType.NOT).addChildren(factory.fromPrototypeSubtree(predicate))
         expect:
         service.solve(degenerateAnd) == predicate
         service.solve(degenerateOr) == predicate
@@ -330,19 +330,19 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should count tree expressions'() {
         given:
-        BasicNode caseOne = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode caseOne = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 ),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.ALL).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B')
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.ALL).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B')
                         )
                 )
         )
-        BasicNode caseTwo = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode caseTwo = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 )
         )
         expect:
@@ -355,51 +355,51 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
     void 'should identify cases where a term may be distributed'() {
         given:
         // A(B + C + D) -> AB + AC + AD
-        BasicNode case1 = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode case1 = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 )
         )
         // A + BCD      -> (A+B)(A+C)(A+D)
-        BasicNode case2 = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode case2 = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 )
         )
         // A + B + C    -> A + B + C
-        BasicNode case3 = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode case3 = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.PREDICATE, 'C'),
         )
         // ABC          -> ABC
-        BasicNode case4 = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode case4 = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.PREDICATE, 'C'),
         )
         // AB(C + D)    -> ABC + ABD
-        BasicNode case5 = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode case5 = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 )
         )
         // A + B + CD   -> (A + B + C)(A + B + D)
-        BasicNode case6 = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode case6 = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 )
         )
         expect:
@@ -413,25 +413,25 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should cleverly use distributive properties'() {
         given:
-        BasicNode input = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode input = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         )
                 )
         )
-        BasicNode expected = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode expected = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
         service.lookAhead = 2
@@ -441,43 +441,43 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should identify absorption 1 and 2 cases'() {
         given:
-        BasicNode absorption1Case = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode absorption1Case = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
 
-        BasicNode absorption2Case = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode absorption2Case = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
 
-        BasicNode shouldFail = new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode shouldFail = new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         )
                 )
 
-        BasicNode shouldAlsoFail = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode shouldAlsoFail = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         )
                 )
         )
@@ -490,78 +490,78 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should handle absorption 1 and 2 cases'() {
         given:
-        BasicNode absorption1Case = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode absorption1Case = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
 
-        BasicNode predicateA = new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode predicateA = new BasicNode(BaseNodeType.PREDICATE, 'A')
 
-        BasicNode absorption2Case = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode absorption2Case = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
         expect:
-        service.absorbComposite(absorption1Case) == new BasicNode(ParseNodeType.ALL).addChildren(predicateA)
-        service.absorbComposite(absorption2Case) == new BasicNode(ParseNodeType.ANY).addChildren(predicateA)
+        service.absorbComposite(absorption1Case) == new BasicNode(BaseNodeType.ALL).addChildren(predicateA)
+        service.absorbComposite(absorption2Case) == new BasicNode(BaseNodeType.ANY).addChildren(predicateA)
     }
 
     void 'should handle advanced absorption cases'() {
         given:
-        BasicNode caseOne = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+        BasicNode caseOne = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
 
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
 
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'E'),
-
-                ),
-        )
-        BasicNode expectedOne = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B')
-        )
-
-        BasicNode caseTwo = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-
-                ),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
-
-                ),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'E'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'E'),
 
                 ),
         )
-        BasicNode expectedTwo = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B')
+        BasicNode expectedOne = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B')
+        )
+
+        BasicNode caseTwo = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+
+                ),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
+
+                ),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'E'),
+
+                ),
+        )
+        BasicNode expectedTwo = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B')
         )
         expect:
         service.absorbComposite(caseOne) == expectedOne
@@ -570,54 +570,54 @@ class BooleanAlgebraSolverServiceSpec extends Specification {
 
     void 'should simplify composite complements'() {
         given:
-        BasicNode andNegation = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode andNegation = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 )
         )
-        BasicNode orNegation = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.NOT).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A')
+        BasicNode orNegation = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.NOT).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A')
                 )
         )
         expect:
-        service.solve(andNegation) == new BasicNode(ParseNodeType.FALSE)
-        service.solve(orNegation) == new BasicNode(ParseNodeType.TRUE)
+        service.solve(andNegation) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(orNegation) == new BasicNode(BaseNodeType.TRUE)
     }
 
     void 'should simplify basic complements'() {
         given:
-        BasicNode trueNegation = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.TRUE)
+        BasicNode trueNegation = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.TRUE)
         )
-        BasicNode falseNegation = new BasicNode(ParseNodeType.NOT).addChildren(
-                new BasicNode(ParseNodeType.FALSE)
+        BasicNode falseNegation = new BasicNode(BaseNodeType.NOT).addChildren(
+                new BasicNode(BaseNodeType.FALSE)
         )
         expect:
-        service.solve(trueNegation) == new BasicNode(ParseNodeType.FALSE)
-        service.solve(falseNegation) == new BasicNode(ParseNodeType.TRUE)
+        service.solve(trueNegation) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(falseNegation) == new BasicNode(BaseNodeType.TRUE)
     }
 
     void 'should simplify composites containing true or false'() {
         given:
-        BasicNode andCase = new BasicNode(ParseNodeType.ALL).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.FALSE),
-                new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode andCase = new BasicNode(BaseNodeType.ALL).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.FALSE),
+                new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.PREDICATE, 'D'),
         )
-        BasicNode orCase = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                new BasicNode(ParseNodeType.TRUE),
-                new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                new BasicNode(ParseNodeType.PREDICATE, 'D'),
+        BasicNode orCase = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                new BasicNode(BaseNodeType.TRUE),
+                new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.PREDICATE, 'D'),
         )
         expect:
-        service.solve(andCase) == new BasicNode(ParseNodeType.FALSE)
-        service.solve(orCase) == new BasicNode(ParseNodeType.TRUE)
+        service.solve(andCase) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(orCase) == new BasicNode(BaseNodeType.TRUE)
     }
 }

@@ -4,7 +4,7 @@ import com.stanson.bass.NodeType
 import com.stanson.bass.TreeLike
 import groovy.transform.CompileStatic
 
-enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE }
+enum BaseNodeType { NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE }
 
 /**
  * A node holds data and zero or more references to children.
@@ -16,7 +16,7 @@ enum ParseNodeType { NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE }
 @CompileStatic
 class BasicNode implements TreeLike<BasicNode> {
     /** Short-hand to determine what this node represents. */
-    ParseNodeType parseNodeType = ParseNodeType.NULL
+    BaseNodeType parseNodeType = BaseNodeType.NULL
     /** Holds a reference to whatever data is desired. */
     def data
 
@@ -36,7 +36,7 @@ class BasicNode implements TreeLike<BasicNode> {
      */
     List<BasicNode> children = []
 
-    BasicNode(ParseNodeType type = ParseNodeType.NULL, def data = null) {
+    BasicNode(BaseNodeType type = BaseNodeType.NULL, def data = null) {
         this.parseNodeType = type
         this.data = data
     }
@@ -107,7 +107,7 @@ class BasicNode implements TreeLike<BasicNode> {
      */
     int hashCode() {
         int result = 31
-        result = 17 * result + (type ? type.hashCode() : 0)
+        result = 17 * result + (nodeType ? nodeType.hashCode() : 0)
         // Need '!= null' check as '0' is a valid, but falsy data value
         result = 17 * result + (data != null ? data.hashCode() : 0)
         result = 17 * result + children.hashCode()
@@ -120,7 +120,7 @@ class BasicNode implements TreeLike<BasicNode> {
     boolean equals(Object obj) {
         if (!(obj instanceof BasicNode)) { return false }
         BasicNode that = obj as BasicNode
-        return this.type == that.type &&
+        return this.nodeType == that.nodeType &&
                 this.data == that.data &&
                 this.children.size() == that.children.size() &&
                 (this.children as Set<BasicNode>) == (that.children as Set<BasicNode>)
@@ -130,23 +130,23 @@ class BasicNode implements TreeLike<BasicNode> {
 
     protected String toStringHelper(String indent) {
         String dataString = this.data ? "${this.data}" : 'NODATA'
-        String result = "${indent} ${this.type} (${dataString})\n"
+        String result = "${indent} ${this.nodeType} (${dataString})\n"
         result += this.children.collect {
             it.toStringHelper("${indent}>")
         }.join(",")
         result
     }
 
-    NodeType getType() {
+    NodeType getNodeType() {
         // NULL, ANY, ALL, NOT, PREDICATE, TRUE, FALSE
         [
-                (ParseNodeType.NULL): NodeType.NULL,
-                (ParseNodeType.ANY): NodeType.ANY,
-                (ParseNodeType.ALL): NodeType.ALL,
-                (ParseNodeType.NOT): NodeType.NOT,
-                (ParseNodeType.PREDICATE): NodeType.PREDICATE,
-                (ParseNodeType.TRUE): NodeType.TRUE,
-                (ParseNodeType.FALSE): NodeType.FALSE,
+                (BaseNodeType.NULL)     : NodeType.NULL,
+                (BaseNodeType.ANY)      : NodeType.ANY,
+                (BaseNodeType.ALL)      : NodeType.ALL,
+                (BaseNodeType.NOT)      : NodeType.NOT,
+                (BaseNodeType.PREDICATE): NodeType.PREDICATE,
+                (BaseNodeType.TRUE)     : NodeType.TRUE,
+                (BaseNodeType.FALSE)    : NodeType.FALSE,
         ].get(this.parseNodeType)
     }
 }

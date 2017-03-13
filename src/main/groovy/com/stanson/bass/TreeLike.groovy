@@ -16,7 +16,7 @@ interface TreeLike<T extends TreeLike<T>> {
      *
      * @return
      */
-    NodeType getType()
+    NodeType getNodeType()
 
     /**
      * Retrieve a list of the children of this node. This method should never return null.

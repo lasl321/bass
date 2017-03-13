@@ -202,7 +202,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     private Integer depthCalculatorRecursion(T node, Integer parentDepth) {
-        if (node.type == NodeType.PREDICATE) {
+        if (node.nodeType == NodeType.PREDICATE) {
             return 1 + parentDepth
         } else {
             List<Integer> childPathDepths = node.children.collect {
@@ -220,9 +220,9 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean canAbsorbComposite(T input) {
-        if (input.type in COMPOSITES && input.children.size() >= 2) {
+        if (input.nodeType in COMPOSITES && input.children.size() >= 2) {
             List<T> oppositeComposites = input.children.findAll { T child ->
-                child.type == COMPOSITE_FLIP.get(input.type) && child.children
+                child.nodeType == COMPOSITE_FLIP.get(input.nodeType) && child.children
             }
             Set<T> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<T>
 
@@ -233,7 +233,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
 
     T absorbComposite(T input) {
         List<T> oppositeComposites = input.children.findAll { T child ->
-            child.type == COMPOSITE_FLIP.get(input.type) && child.children
+            child.nodeType == COMPOSITE_FLIP.get(input.nodeType) && child.children
         }
 
         Set<T> otherChildren = input.children.findAll { !(it in oppositeComposites) } as Set<T>
@@ -252,24 +252,24 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean canDistributeTerm(T input) {
-        input.type in COMPOSITES && input.children.size() > 1 &&
-                input.children.find { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+        input.nodeType in COMPOSITES && input.children.size() > 1 &&
+                input.children.find { T child -> child.nodeType == COMPOSITE_FLIP.get(input.nodeType) }
     }
 
     T distributeTerm(T input) {
         // Select an opposite composite child to distribute
         List<T> inputChildren = input.children
         // just pull the first opposite composite child
-        T oppositeCompositeChild = inputChildren.find { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+        T oppositeCompositeChild = inputChildren.find { T child -> child.nodeType == COMPOSITE_FLIP.get(input.nodeType) }
 
         List<T> otherChildren = inputChildren.collect() - oppositeCompositeChild // A
 
         List<T> childrenOfOpposite = oppositeCompositeChild.children.collect() // B, C
 
-        T result = factory.withType(COMPOSITE_FLIP.get(input.type))
+        T result = factory.withType(COMPOSITE_FLIP.get(input.nodeType))
 
         List<T> newTerms = childrenOfOpposite.collect { T oppositeChild ->
-            T newParent = factory.withType(input.type)
+            T newParent = factory.withType(input.nodeType)
             newParent.addChild(oppositeChild) // intentionally breaks parent link
             otherChildren.each { T otherChild ->
                 // add a copy of these in to prevent breaking the existing parent links
@@ -290,9 +290,9 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean canExtractCommonTerm(T input) {
-        if (input.type in COMPOSITES) {
+        if (input.nodeType in COMPOSITES) {
             List<T> oppositeCompositeChildren = input.children.findAll { T child ->
-                child.type == COMPOSITE_FLIP.get(input.type) }
+                child.nodeType == COMPOSITE_FLIP.get(input.nodeType) }
 
             if (oppositeCompositeChildren.size() > 1) {
                 // Get the children of each opposite kid, then check for a non-empty intersection between them
@@ -315,7 +315,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      */
     T extractCommonTerm(T input) {
         // Remove everything that's being pushed down a level
-        List<T> oppositeComposites = input.children.findAll { T child -> child.type == COMPOSITE_FLIP.get(input.type) }
+        List<T> oppositeComposites = input.children.findAll { T child -> child.nodeType == COMPOSITE_FLIP.get(input.nodeType) }
         oppositeComposites.each { input.removeChild(it) }
 
         List<List<T>> setOfChildren = oppositeComposites.collect { it.children.collect() } // don't modify the input children
@@ -326,9 +326,9 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
         // Get the common term (just take the first)
         T commonTerm = commonTerms.head()
         // Make the new composites
-        T newOpposite = factory.withType(COMPOSITE_FLIP.get(input.type))
+        T newOpposite = factory.withType(COMPOSITE_FLIP.get(input.nodeType))
 
-        T newSame = factory.withType(input.type)
+        T newSame = factory.withType(input.nodeType)
 
         // Now add the opposite composite grandkids to the 'newSame' collection
         oppositeComposites.each {
@@ -356,7 +356,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean isIdempotentComposite(T input) {
-        if (input.type in COMPOSITES) {
+        if (input.nodeType in COMPOSITES) {
             Integer uniqueChildCount = (input.children as Set).size()
             return uniqueChildCount != input.children.size()
         }
@@ -380,11 +380,11 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      */
     Boolean containsCollapsibleComposites(T input) {
         // Input is a composite and contains children of the same composite type
-        input.type in COMPOSITES && input.children.findAll { T child -> child.type == input.type }
+        input.nodeType in COMPOSITES && input.children.findAll { T child -> child.nodeType == input.nodeType }
     }
 
     T collapseComposite(T input) {
-        List<T> redundantKids = input.children.findAll { T child -> child.type == input.type }
+        List<T> redundantKids = input.children.findAll { T child -> child.nodeType == input.nodeType }
         redundantKids.each { input.removeChild(it) }
         List<T> grandKids = redundantKids.collectMany { it.children }
         grandKids.each { input.addChild(it) }
@@ -397,10 +397,10 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean doubleNegationIsPresent(T input) {
-        input.type == NodeType.NOT &&
+        input.nodeType == NodeType.NOT &&
                 input.children &&
                 input.children.head() &&
-                input.children.head().type == NodeType.NOT
+                input.children.head().nodeType == NodeType.NOT
     }
 
     T collapseDoubleNegation(T input) {
@@ -413,7 +413,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      * @return
      */
     Boolean isDegenerateComposite(T input) {
-        input.type in COMPOSITES && input.children.size() < 2
+        input.nodeType in COMPOSITES && input.children.size() < 2
     }
 
 
@@ -430,14 +430,14 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
      */
     Boolean doesDeMorgansLawApply(T input) {
         // If the input is a negation with a composite containing two elements
-        Boolean caseOne = input.type == NodeType.NOT &&
+        Boolean caseOne = input.nodeType == NodeType.NOT &&
                 input.children &&
-                input.children.head().type in COMPOSITES &&
+                input.children.head().nodeType in COMPOSITES &&
                 input.children.head().children.size() == 2
         // or if the input is a composite with two negated elements
-        Boolean caseTwo = input.type in COMPOSITES &&
+        Boolean caseTwo = input.nodeType in COMPOSITES &&
                 input.children.size() == 2 &&
-                input.children.every { T child -> child.type == NodeType.NOT }
+                input.children.every { T child -> child.nodeType == NodeType.NOT }
         caseOne || caseTwo
     }
 
@@ -449,19 +449,19 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     T applyDeMorgansLaw(T input) {
         T result
         // We can assume DeMorgan's does apply here, so the case determination is simple
-        if (input.type in COMPOSITES) { // Composite of two negated elements -> negation of opposite composite with two
+        if (input.nodeType in COMPOSITES) { // Composite of two negated elements -> negation of opposite composite with two
             T elementOne = input.children[0].children[0] // first negation's child
             T elementTwo = input.children[1].children[0] // second negation's child
 
             result = factory.withType(NodeType.NOT).addChild(
-                    factory.withType(COMPOSITE_FLIP.get(input.type)).addChildren([elementOne, elementTwo])
+                    factory.withType(COMPOSITE_FLIP.get(input.nodeType)).addChildren([elementOne, elementTwo])
             )
         } else { // Negation of composite with two -> Opposite composite of two negations
             T composite = input.children[0]
             T elementOne = composite.children[0] // negation's child's first element
             T elementTwo = composite.children[1] // negation's child's second element
 
-            result = factory.withType(COMPOSITE_FLIP.get(composite.type)).addChildren([
+            result = factory.withType(COMPOSITE_FLIP.get(composite.nodeType)).addChildren([
                     factory.withType(NodeType.NOT).addChild(elementOne),
                     factory.withType(NodeType.NOT).addChild(elementTwo)
             ])
@@ -470,19 +470,19 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     Boolean containsBasicComplement(T input) {
-        List<T> nots = input.children.findAll { T child -> child.type == NodeType.NOT }
+        List<T> nots = input.children.findAll { T child -> child.nodeType == NodeType.NOT }
 
-        nots.any { it.children && it.children.head().type in CONSTANT_BOOL }
+        nots.any { it.children && it.children.head().nodeType in CONSTANT_BOOL }
     }
 
     T simplifyBasicComplement(T input) {
         List<T> readyForAbsorption = input.children.findAll { T child ->
-            child.type == NodeType.NOT && child.children && child.children.head().type in CONSTANT_BOOL
+            child.nodeType == NodeType.NOT && child.children && child.children.head().nodeType in CONSTANT_BOOL
         }
         readyForAbsorption.each {
             input.removeChild(it)
             input.addChild(
-                    factory.withType(CONSTANT_BOOL_FLIP.get(it.children.head().type))
+                    factory.withType(CONSTANT_BOOL_FLIP.get(it.children.head().nodeType))
             )
         }
 
@@ -490,8 +490,8 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     Boolean containsComplement(T input) {
-        if (input.type in COMPOSITES) {
-            Map<Boolean, List<T>> havesAndHaveNots = input.children.groupBy { T child -> child.type == NodeType.NOT }
+        if (input.nodeType in COMPOSITES) {
+            Map<Boolean, List<T>> havesAndHaveNots = input.children.groupBy { T child -> child.nodeType == NodeType.NOT }
             Set<T> negatedChildren = havesAndHaveNots.get(true, []).collectMany { T p -> p.children } as Set
             Set<T> otherChildren = havesAndHaveNots.get(false, []) as Set
 
@@ -503,7 +503,7 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     T simplifyComplement(T input) {
         input.children.each { input.removeChild(it) }
         // If we get here, it is known that the complement case exists. We just need to simplify it now
-        if (input.type == NodeType.ANY) {
+        if (input.nodeType == NodeType.ANY) {
             input.addChild(factory.withType(NodeType.TRUE))
         } else {
             input.addChild(factory.withType(NodeType.FALSE))
@@ -511,12 +511,12 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
     }
 
     Boolean isCompositeWithConstant(T input) {
-        (input.type == NodeType.ANY && input.children.find { T child -> child.type == NodeType.TRUE }) ||
-                (input.type == NodeType.ALL && input.children.find { T child -> child.type == NodeType.FALSE })
+        (input.nodeType == NodeType.ANY && input.children.find { T child -> child.nodeType == NodeType.TRUE }) ||
+                (input.nodeType == NodeType.ALL && input.children.find { T child -> child.nodeType == NodeType.FALSE })
     }
 
     T simplifyCompositeWithConstant(T input) {
-        input.type == NodeType.ANY ? factory.withType(NodeType.TRUE) : factory.withType(NodeType.FALSE)
+        input.nodeType == NodeType.ANY ? factory.withType(NodeType.TRUE) : factory.withType(NodeType.FALSE)
     }
 
     static void depthFirstTraversal(T root, Closure visitor) {
@@ -529,34 +529,34 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
         printer = { T node ->
             // process myself, then each of my children
             String representation = 'wtf'
-            if (node.type == NodeType.PREDICATE) {
+            if (node.nodeType == NodeType.PREDICATE) {
                 representation = ((String)((BasicNode)node).data)[0]
-            } else if (node.type == NodeType.FALSE) {
+            } else if (node.nodeType == NodeType.FALSE) {
                 representation = 'F'
-            } else if (node.type == NodeType.TRUE) {
+            } else if (node.nodeType == NodeType.TRUE) {
                 representation = 'T'
-            } else if (node.type == NodeType.NULL) {
+            } else if (node.nodeType == NodeType.NULL) {
                 representation = 'X'
-            } else if (node.type == NodeType.ANY) {
+            } else if (node.nodeType == NodeType.ANY) {
                 representation = ' + '
-            } else if (node.type == NodeType.ALL) {
+            } else if (node.nodeType == NodeType.ALL) {
                 representation = ' * '
-            } else if (node.type == NodeType.NOT) {
+            } else if (node.nodeType == NodeType.NOT) {
                 representation = ' ¬'
             }
             String result = ''
-            if (node.type == NodeType.NOT) {
+            if (node.nodeType == NodeType.NOT) {
                 result += (representation)
             }
-            if (node.type in [NodeType.ANY, NodeType.ALL, NodeType.NOT]) {
+            if (node.nodeType in [NodeType.ANY, NodeType.ALL, NodeType.NOT]) {
                 result += ('(')
-            } else if (node.type in [NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE]) {
+            } else if (node.nodeType in [NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE]) {
                 result += ("$representation")
             }
 
             List<String> childRepresentations = node.children.collect { printer(it) }
             result += (childRepresentations.join(representation))
-            if (node.type in [NodeType.ANY, NodeType.ALL, NodeType.NOT]) {
+            if (node.nodeType in [NodeType.ANY, NodeType.ALL, NodeType.NOT]) {
                 result += (')')
             }
             return result

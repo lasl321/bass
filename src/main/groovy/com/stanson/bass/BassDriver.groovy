@@ -2,7 +2,7 @@ package com.stanson.bass
 
 import com.stanson.parsing.BasicNode
 import com.stanson.parsing.BasicNodeFactory
-import com.stanson.parsing.ParseNodeType
+import com.stanson.parsing.BaseNodeType
 import groovy.util.logging.Log4j
 import org.apache.log4j.Level
 
@@ -26,17 +26,17 @@ class BassDriver {
                 lookAhead: 3, factory: new BasicNodeFactory())
         // AB + BC(B + C)
         // Expect B(A + C)
-        BasicNode easy = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode easy = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         )
                 )
         )
@@ -45,25 +45,25 @@ class BassDriver {
         log.info('Easy result is: ' + bass.prettyPrint(easyResult))
         // ((A * B) + ((B * C) + (B * C * D) + (B * D * E)))
         // Simplifies to (B * (A + C + (D * E)))
-        BasicNode medium = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
+        BasicNode medium = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
                 ),
-                new BasicNode(ParseNodeType.ANY).addChildren(
-                        new BasicNode(ParseNodeType.ALL).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ANY).addChildren(
+                        new BasicNode(BaseNodeType.ALL).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
                         ),
-                        new BasicNode(ParseNodeType.ALL).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'D'),
+                        new BasicNode(BaseNodeType.ALL).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'D'),
                         ),
-                        new BasicNode(ParseNodeType.ALL).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'D'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'E'),
+                        new BasicNode(BaseNodeType.ALL).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'D'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'E'),
                         ),
                 ),
         )
@@ -71,44 +71,44 @@ class BassDriver {
         BasicNode mediumResult = bass.solve(medium)
         log.info('Medium result: ' + bass.prettyPrint(mediumResult))
         // ((A * B * F) + (A * C * F) + (A * C) + (A * D) + (A * B * C) + (B * A) + E + F + ((E + F) * (F + E)))
-        BasicNode hard = new BasicNode(ParseNodeType.ANY).addChildren(
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'F'),
+        BasicNode hard = new BasicNode(BaseNodeType.ANY).addChildren(
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'F'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'F'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'F'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'D'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'D'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'C'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 ),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.PREDICATE, 'B'),
-                        new BasicNode(ParseNodeType.PREDICATE, 'A'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.PREDICATE, 'B'),
+                        new BasicNode(BaseNodeType.PREDICATE, 'A'),
                 ),
-                new BasicNode(ParseNodeType.PREDICATE, 'E'),
-                new BasicNode(ParseNodeType.PREDICATE, 'F'),
-                new BasicNode(ParseNodeType.ALL).addChildren(
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'E'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'F'),
+                new BasicNode(BaseNodeType.PREDICATE, 'E'),
+                new BasicNode(BaseNodeType.PREDICATE, 'F'),
+                new BasicNode(BaseNodeType.ALL).addChildren(
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'E'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'F'),
                         ),
-                        new BasicNode(ParseNodeType.ANY).addChildren(
-                                new BasicNode(ParseNodeType.PREDICATE, 'F'),
-                                new BasicNode(ParseNodeType.PREDICATE, 'E'),
+                        new BasicNode(BaseNodeType.ANY).addChildren(
+                                new BasicNode(BaseNodeType.PREDICATE, 'F'),
+                                new BasicNode(BaseNodeType.PREDICATE, 'E'),
                         ),
                 )
         )

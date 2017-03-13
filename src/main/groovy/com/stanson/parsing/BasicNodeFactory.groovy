@@ -8,14 +8,14 @@ import com.stanson.bass.TreeLikeFactory
  */
 class BasicNodeFactory implements TreeLikeFactory<BasicNode> {
 
-    Map<NodeType, ParseNodeType> typeMap = [
-        (NodeType.NULL): ParseNodeType.NULL,
-        (NodeType.ANY): ParseNodeType.ANY,
-        (NodeType.ALL): ParseNodeType.ALL,
-        (NodeType.NOT): ParseNodeType.NOT,
-        (NodeType.PREDICATE): ParseNodeType.PREDICATE,
-        (NodeType.TRUE): ParseNodeType.TRUE,
-        (NodeType.FALSE): ParseNodeType.FALSE,
+    Map<NodeType, BaseNodeType> typeMap = [
+        (NodeType.NULL): BaseNodeType.NULL,
+        (NodeType.ANY): BaseNodeType.ANY,
+        (NodeType.ALL): BaseNodeType.ALL,
+        (NodeType.NOT): BaseNodeType.NOT,
+        (NodeType.PREDICATE): BaseNodeType.PREDICATE,
+        (NodeType.TRUE): BaseNodeType.TRUE,
+        (NodeType.FALSE): BaseNodeType.FALSE,
     ]
 
     /**
