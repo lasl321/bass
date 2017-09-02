@@ -6,44 +6,29 @@ import groovy.util.logging.Log4j
 import groovy.transform.CompileStatic
 
 // lasl321 Add log4j logging
-class BooleanAlgebraSolverService<T extends TreeLike> {
+class BooleanAlgebraSolverService<T> (private val factory: TreeLikeFactory<T>, private val lookAhead: Int )where T : TreeLike<T> {
+    companion object {
+        val CONSTANT_BOOL: List<NodeType> = listOf(NodeType.TRUE, NodeType.FALSE)
+        val CONSTANT_BOOL_FLIP = mapOf(NodeType.TRUE to NodeType.FALSE, NodeType.FALSE to NodeType.TRUE)
+        val COMPOSITES: List<NodeType> = listOf(NodeType.ANY, NodeType.ALL)
+        val COMPOSITE_FLIP = mapOf(NodeType.ANY to NodeType.ALL, NodeType.ALL to NodeType.ANY)
+    }
 
 
-    static final List<NodeType> CONSTANT_BOOL = [
-            NodeType.TRUE, NodeType.FALSE
-    ]
+    private val canApplyTransform = listOf(
+            Triple("DeMorgan\"s Law", this::doesDeMorgansLawApply, this::applyDeMorgansLaw),
+            Triple("Degenerate Composite", this::isDegenerateComposite, this::collapseDegenerateComposite),
+            Triple("Double Negative", this::doubleNegationIsPresent, this::collapseDoubleNegation),
+            Triple("Idempotent Composite", this::isIdempotentComposite, this::collapseIdempotentComposite),
+            Triple("Collapsible Composite", this::containsCollapsibleComposites, this::collapseComposite),
+            Triple("Common Term Extraction", this::canExtractCommonTerm, this::extractCommonTerm),
+            Triple("Term Distribution", this::canDistributeTerm, this::distributeTerm),
+            Triple("Absorption 1 or 2", this::canAbsorbComposite, this::absorbComposite),
+            Triple("Composite complement", this::containsComplement, this::simplifyComplement),
+            Triple("Basic complement", this::containsBasicComplement, this::simplifyBasicComplement),
+            Triple("Composite with constant", this::isCompositeWithConstant, this::simplifyCompositeWithConstant),
+    )
 
-    static final Map<NodeType, NodeType> CONSTANT_BOOL_FLIP = [
-            (NodeType.TRUE): NodeType.FALSE,
-            (NodeType.FALSE): NodeType.TRUE,
-    ]
-
-    static final List<NodeType> COMPOSITES = [
-            NodeType.ANY, NodeType.ALL
-    ]
-
-    static final Map<NodeType, NodeType> COMPOSITE_FLIP = [
-            (NodeType.ANY): NodeType.ALL,
-            (NodeType.ALL): NodeType.ANY
-    ]
-
-    private final List<Tuple> canApplyTransform = [
-            new Tuple('DeMorgan\'s Law', this.&doesDeMorgansLawApply, this.&applyDeMorgansLaw),
-            new Tuple('Degenerate Composite', this.&isDegenerateComposite, this.&collapseDegenerateComposite),
-            new Tuple('Double Negative', this.&doubleNegationIsPresent, this.&collapseDoubleNegation),
-            new Tuple('Idempotent Composite', this.&isIdempotentComposite, this.&collapseIdempotentComposite),
-            new Tuple('Collapsible Composite', this.&containsCollapsibleComposites, this.&collapseComposite),
-            new Tuple('Common Term Extraction', this.&canExtractCommonTerm, this.&extractCommonTerm),
-            new Tuple('Term Distribution', this.&canDistributeTerm, this.&distributeTerm),
-            new Tuple('Absorption 1 or 2', this.&canAbsorbComposite, this.&absorbComposite),
-            new Tuple('Composite complement', this.&containsComplement, this.&simplifyComplement),
-            new Tuple('Basic complement', this.&containsBasicComplement, this.&simplifyBasicComplement),
-            new Tuple('Composite with constant', this.&isCompositeWithConstant, this.&simplifyCompositeWithConstant),
-    ]
-
-    TreeLikeFactory<T> factory
-
-    Integer lookAhead = 1
     /**
      * Given the root of an expression tree, attempt to return the simplest equivalent representation.
      *
@@ -415,52 +400,36 @@ class BooleanAlgebraSolverService<T extends TreeLike> {
         input.children ? input.children.head() : null
     }
 
-    /**
-     * Returns true if the subtree rooted at the provided T appears to be a case in which
-     * DeMorgan's Law can be applied.
-     *
-     * @param input
-     * @return
-     */
-    Boolean doesDeMorgansLawApply(T input) {
-        // If the input is a negation with a composite containing two elements
-        Boolean caseOne = input.nodeType == NodeType.NOT &&
-                input.children &&
-                input.children.head().nodeType in COMPOSITES &&
-                input.children.head().children.size() == 2
-        // or if the input is a composite with two negated elements
-        Boolean caseTwo = input.nodeType in COMPOSITES &&
-                input.children.size() == 2 &&
-                input.children.every { T child -> child.nodeType == NodeType.NOT }
-        caseOne || caseTwo
+    private fun doesDeMorgansLawApply(input: T) : Boolean{
+        val caseOne = input.nodeType == NodeType.NOT &&
+                input.children.first().nodeType in COMPOSITES &&
+                input.children.first().children.size == 2
+
+        val caseTwo = input.nodeType in COMPOSITES &&
+                input.children.size == 2 &&
+                input.children.all { it.nodeType == NodeType.NOT }
+
+        return caseOne || caseTwo
     }
 
-    /**
-     * Transforms the provided input according to DeMorgan's Law.
-     * @param input
-     * @return
-     */
-    T applyDeMorgansLaw(T input) {
-        T result
-        // We can assume DeMorgan's does apply here, so the case determination is simple
-        if (input.nodeType in COMPOSITES) { // Composite of two negated elements -> negation of opposite composite with two
-            T elementOne = input.children[0].children[0] // first negation's child
-            T elementTwo = input.children[1].children[0] // second negation's child
+    private fun applyDeMorgansLaw(input:T) :T {
+        return if (input.nodeType in COMPOSITES) {
+            val elementOne = input.children[0].children[0]
+            val elementTwo = input.children[1].children[0]
 
-            result = factory.withType(NodeType.NOT).addChild(
-                    factory.withType(COMPOSITE_FLIP.get(input.nodeType)).addChildren([elementOne, elementTwo])
+            factory.withType(NodeType.NOT).addChild(
+                    factory.withType(COMPOSITE_FLIP[input.nodeType]).addChildren(listOf(elementOne, elementTwo))
             )
-        } else { // Negation of composite with two -> Opposite composite of two negations
-            T composite = input.children[0]
-            T elementOne = composite.children[0] // negation's child's first element
-            T elementTwo = composite.children[1] // negation's child's second element
+        } else {
+            val composite = input.children[0]
+            val elementOne = composite.children[0]
+            val elementTwo = composite.children[1]
 
-            result = factory.withType(COMPOSITE_FLIP.get(composite.nodeType)).addChildren([
+            factory.withType(COMPOSITE_FLIP[composite.nodeType]).addChildren(listOf(
                     factory.withType(NodeType.NOT).addChild(elementOne),
                     factory.withType(NodeType.NOT).addChild(elementTwo)
-            ])
+            ))
         }
-        result
     }
 
     Boolean containsBasicComplement(T input) {
