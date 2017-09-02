@@ -4,6 +4,7 @@
 *.swn
 # Idea droppings
 .idea/
+bass.iml
 # Build output
 build/
 # Gradle cache
