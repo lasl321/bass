@@ -5,6 +5,7 @@
 # Idea droppings
 .idea/
 bass.iml
+out/
 # Build output
 build/
 # Gradle cache
