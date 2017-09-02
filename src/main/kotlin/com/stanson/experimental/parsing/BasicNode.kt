@@ -3,9 +3,9 @@ package com.stanson.experimental.parsing
 import com.stanson.experimental.NodeType
 import com.stanson.experimental.TreeLike
 
-class BasicNode(private val parseNodeType: BaseNodeType, private val data: Any?) : TreeLike<BasicNode> {
+class BasicNode(val parseNodeType: BaseNodeType, val data: Any?) : TreeLike<BasicNode> {
     private var parent: BasicNode? = null
-    private var children = mutableListOf<BasicNode>()
+    var children = mutableListOf<BasicNode>()
 
     override fun getChildren(): List<BasicNode> {
         return children
