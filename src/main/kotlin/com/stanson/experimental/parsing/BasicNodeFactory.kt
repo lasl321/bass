@@ -4,18 +4,8 @@ import com.stanson.experimental.NodeType
 import com.stanson.experimental.TreeLikeFactory
 
 class BasicNodeFactory : TreeLikeFactory<BasicNode> {
-    private val typeMap = mapOf(
-            NodeType.NULL to BaseNodeType.NULL,
-            NodeType.ANY to BaseNodeType.ANY,
-            NodeType.ALL to BaseNodeType.ALL,
-            NodeType.NOT to BaseNodeType.NOT,
-            NodeType.PREDICATE to BaseNodeType.PREDICATE,
-            NodeType.TRUE to BaseNodeType.TRUE,
-            NodeType.FALSE to BaseNodeType.FALSE
-    )
-
     override fun withType(type: NodeType): BasicNode {
-        return BasicNode(typeMap[type]!!, null)
+        return BasicNode(getNodeType(type))
     }
 
     override fun fromPrototype(prototype: BasicNode): BasicNode {
@@ -28,5 +18,17 @@ class BasicNodeFactory : TreeLikeFactory<BasicNode> {
             result.addChild(fromPrototypeSubtree(it))
         }
         return result
+    }
+
+    private fun getNodeType(type: NodeType): BaseNodeType {
+        return when (type) {
+            NodeType.NULL -> BaseNodeType.NULL
+            NodeType.ANY -> BaseNodeType.ANY
+            NodeType.ALL -> BaseNodeType.ALL
+            NodeType.NOT -> BaseNodeType.NOT
+            NodeType.PREDICATE -> BaseNodeType.PREDICATE
+            NodeType.TRUE -> BaseNodeType.TRUE
+            NodeType.FALSE -> BaseNodeType.FALSE
+        }
     }
 }
