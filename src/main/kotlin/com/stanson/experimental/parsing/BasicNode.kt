@@ -92,16 +92,16 @@ class BasicNode : TreeLike<BasicNode> {
         return result
     }
 
-    override fun getNodeType(): NodeType {
-        val m = mapOf(
-                BaseNodeType.NULL to NodeType.NULL,
-                BaseNodeType.ANY to NodeType.ANY,
-                BaseNodeType.ALL to NodeType.ALL,
-                BaseNodeType.NOT to NodeType.NOT,
-                BaseNodeType.PREDICATE to NodeType.PREDICATE,
-                BaseNodeType.TRUE to NodeType.TRUE,
-                BaseNodeType.FALSE to NodeType.FALSE)
-
-        return m[type]!!
-    }
+    override val nodeType: NodeType
+        get() {
+            return when (type) {
+                BaseNodeType.NULL -> NodeType.NULL
+                BaseNodeType.ANY -> NodeType.ANY
+                BaseNodeType.ALL -> NodeType.ALL
+                BaseNodeType.NOT -> NodeType.NOT
+                BaseNodeType.PREDICATE -> NodeType.PREDICATE
+                BaseNodeType.TRUE -> NodeType.TRUE
+                BaseNodeType.FALSE -> NodeType.FALSE
+            }
+        }
 }
