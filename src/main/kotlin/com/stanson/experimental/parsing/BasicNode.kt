@@ -7,6 +7,8 @@ class BasicNode(val parseNodeType: BaseNodeType, val data: Any?) : TreeLike<Basi
     private var parent: BasicNode? = null
     private var children = mutableListOf<BasicNode>()
 
+    constructor(parseNodeType: BaseNodeType) : this(parseNodeType, null)
+
     override fun getChildren(): List<BasicNode> {
         return children
     }

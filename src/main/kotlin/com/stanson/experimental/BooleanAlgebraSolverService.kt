@@ -5,7 +5,7 @@ import com.stanson.experimental.parsing.BasicNode
 // lasl321 Add log4j logging
 class BooleanAlgebraSolverService<T>(
         private val factory: TreeLikeFactory<T>,
-        private val lookAhead: Int
+        private var lookAhead: Int
 ) where T : TreeLike<T> {
     companion object {
         val CONSTANT_BOOL: List<NodeType> = listOf(NodeType.TRUE, NodeType.FALSE)
@@ -158,14 +158,12 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun distributeTerm(input: T): T {
-        // Select an opposite composite child to distribute
         val inputChildren = input.getChildren()
-        // just pull the first opposite composite child
         val oppositeCompositeChild = inputChildren.find { it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] }!!
 
         val otherChildren = inputChildren - oppositeCompositeChild
 
-        val childrenOfOpposite = oppositeCompositeChild.getChildren()
+        val childrenOfOpposite = oppositeCompositeChild.getChildren().toList()
 
         val result = factory.withType(COMPOSITE_FLIP[input.getNodeType()]!!)
 
@@ -174,7 +172,6 @@ class BooleanAlgebraSolverService<T>(
             newParent.addChild(oppositeChild)
 
             otherChildren.forEach { otherChild ->
-                // add a copy of these in to prevent breaking the existing parent links
                 newParent.addChild(factory.fromPrototypeSubtree(otherChild))
             }
 
@@ -254,7 +251,7 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun collapseIdempotentComposite(input: T): T {
-        val children = input.getChildren()
+        val children = input.getChildren().toList()
         children.forEach { input.removeChild(it) }
 
         children.toSet().forEach { input.addChild(it) }
