@@ -16,7 +16,7 @@ class BasicNode : TreeLike<BasicNode> {
     constructor(type: BaseNodeType, data: Any?) {
         this.type = type
         this.data = data
-        this.children = mutableListOf<BasicNode>()
+        this.children = mutableListOf()
     }
 
     fun addChildren(vararg children: BasicNode): BasicNode {
