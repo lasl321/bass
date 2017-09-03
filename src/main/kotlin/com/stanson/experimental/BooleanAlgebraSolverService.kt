@@ -350,8 +350,8 @@ class BooleanAlgebraSolverService<T>(
     private fun containsComplement(input: T): Boolean {
         if (input.nodeType in COMPOSITES) {
             val havesAndHaveNot: Map<Boolean, List<T>> = input.children.groupBy { it.nodeType == NodeType.NOT }
-            val negatedChildren: Set<T> = havesAndHaveNot.getOrDefault(true, listOf()).flatMap { p -> p.children }.toSet()
-            val otherChildren: Set<T> = havesAndHaveNot.getOrDefault(false, listOf()).toSet()
+            val negatedChildren = havesAndHaveNot.getOrDefault(true, listOf()).flatMap { p -> p.children }.toSet()
+            val otherChildren = havesAndHaveNot.getOrDefault(false, listOf()).toSet()
 
             if (negatedChildren.intersect(otherChildren).isNotEmpty()) {
                 return true
