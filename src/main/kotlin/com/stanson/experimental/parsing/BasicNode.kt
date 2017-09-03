@@ -3,11 +3,20 @@ package com.stanson.experimental.parsing
 import com.stanson.experimental.NodeType
 import com.stanson.experimental.TreeLike
 
-class BasicNode(val parseNodeType: BaseNodeType, val data: Any?) : TreeLike<BasicNode> {
+class BasicNode : TreeLike<BasicNode> {
+    val type: BaseNodeType
+    val data: Any?
+
     private var parent: BasicNode? = null
-    private var children = mutableListOf<BasicNode>()
+    private val children: MutableList<BasicNode>
 
     constructor(parseNodeType: BaseNodeType) : this(parseNodeType, null)
+
+    constructor(type: BaseNodeType, data: Any?) {
+        this.type = type
+        this.data = data
+        this.children = mutableListOf<BasicNode>()
+    }
 
     override fun getChildren(): List<BasicNode> {
         return children
@@ -93,6 +102,6 @@ class BasicNode(val parseNodeType: BaseNodeType, val data: Any?) : TreeLike<Basi
                 BaseNodeType.TRUE to NodeType.TRUE,
                 BaseNodeType.FALSE to NodeType.FALSE)
 
-        return m[parseNodeType]!!
+        return m[type]!!
     }
 }

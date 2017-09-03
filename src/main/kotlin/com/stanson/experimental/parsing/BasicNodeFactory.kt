@@ -19,7 +19,7 @@ class BasicNodeFactory : TreeLikeFactory<BasicNode> {
     }
 
     override fun fromPrototype(prototype: BasicNode): BasicNode {
-        return BasicNode(prototype.parseNodeType, prototype.data)
+        return BasicNode(prototype.type, prototype.data)
     }
 
     override fun fromPrototypeSubtree(subTree: BasicNode): BasicNode {
