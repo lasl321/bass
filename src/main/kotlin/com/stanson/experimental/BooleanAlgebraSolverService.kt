@@ -15,7 +15,7 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private val canApplyTransform = listOf<Triple<String, (T) -> Boolean, (T) -> T?>>(
-            Triple("DeMorgan\"s Law", this::doesDeMorgansLawApply, this::applyDeMorgansLaw),
+            Triple("DeMorgan's Law", this::doesDeMorgansLawApply, this::applyDeMorgansLaw),
             Triple("Degenerate Composite", this::isDegenerateComposite, this::collapseDegenerateComposite),
             Triple("Double Negative", this::doubleNegationIsPresent, this::collapseDoubleNegation),
             Triple("Idempotent Composite", this::isIdempotentComposite, this::collapseIdempotentComposite),
