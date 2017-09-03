@@ -2,7 +2,6 @@ package com.stanson.experimental
 
 import com.stanson.experimental.parsing.BasicNode
 
-// lasl321 Add log4j logging
 class BooleanAlgebraSolverService<T>(
         private val factory: TreeLikeFactory<T>,
         private var lookAhead: Int
