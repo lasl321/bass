@@ -65,13 +65,13 @@ class BooleanAlgebraSolverService<T>(
             canApplyTransform.forEach {
                 val name = it.first
                 val check = it.second
-                val transform: (T) -> T? = it.third
+                val transform = it.third
 
                 if (check(p)) {
                     val ancestorTree = factory.fromPrototypeSubTree(parentTree.root)
 
                     val transformedTree = TransformedTree(
-                            createTransformedTree(factory.fromPrototypeSubTree(parentTree.root), p, transform),
+                            createTransformedTree(factory.fromPrototypeSubTree(parentTree.root), p, transform)!!,
                             parentTree.ancestors)
 
                     val currentTree = factory.fromPrototypeSubTree(transformedTree.root)
