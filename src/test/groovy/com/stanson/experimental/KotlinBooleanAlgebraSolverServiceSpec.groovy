@@ -248,12 +248,12 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                 )
         )
         expect:
-        service.applyDeMorgansLaw(factory.fromPrototypeSubtree(formOneA)) == formOneB
-        service.applyDeMorgansLaw(factory.fromPrototypeSubtree(formOneB)) == formOneA
+        service.applyDeMorgansLaw(factory.fromPrototypeSubTree(formOneA)) == formOneB
+        service.applyDeMorgansLaw(factory.fromPrototypeSubTree(formOneB)) == formOneA
 
 
-        service.applyDeMorgansLaw(factory.fromPrototypeSubtree(formTwoA)) == formTwoB
-        service.applyDeMorgansLaw(factory.fromPrototypeSubtree(formTwoB)) == formTwoA
+        service.applyDeMorgansLaw(factory.fromPrototypeSubTree(formTwoA)) == formTwoB
+        service.applyDeMorgansLaw(factory.fromPrototypeSubTree(formTwoB)) == formTwoA
     }
 
     void 'simplifies Associative Law'() {
@@ -317,9 +317,9 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
     void 'should reduce degenerate composites'() {
         given:
         BasicNode predicate = new BasicNode(BaseNodeType.PREDICATE, 'A')
-        BasicNode degenerateAnd = new BasicNode(BaseNodeType.ALL).addChildren(factory.fromPrototypeSubtree(predicate))
-        BasicNode degenerateOr = new BasicNode(BaseNodeType.ANY).addChildren(factory.fromPrototypeSubtree(predicate))
-        BasicNode negationIsOK = new BasicNode(BaseNodeType.NOT).addChildren(factory.fromPrototypeSubtree(predicate))
+        BasicNode degenerateAnd = new BasicNode(BaseNodeType.ALL).addChildren(factory.fromPrototypeSubTree(predicate))
+        BasicNode degenerateOr = new BasicNode(BaseNodeType.ANY).addChildren(factory.fromPrototypeSubTree(predicate))
+        BasicNode negationIsOK = new BasicNode(BaseNodeType.NOT).addChildren(factory.fromPrototypeSubTree(predicate))
         expect:
         service.solve(degenerateAnd) == predicate
         service.solve(degenerateOr) == predicate

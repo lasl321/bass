@@ -60,7 +60,7 @@ class BooleanAlgebraSolverService<T>(
     private fun generatePermutations(result: MutableList<TransformedTree<T>>, depth: Int, currentDepth: Int, parentTree: TransformedTree<T>) {
         result.add(TransformedTree(
                 parentTree.root,
-                mutableListOf(Triple("identity", factory.fromPrototypeSubtree(parentTree.root), factory.fromPrototypeSubtree(parentTree.root)))))
+                mutableListOf(Triple("identity", factory.fromPrototypeSubTree(parentTree.root), factory.fromPrototypeSubTree(parentTree.root)))))
 
         fun visitor(p: T) {
             canApplyTransform.forEach {
@@ -69,13 +69,13 @@ class BooleanAlgebraSolverService<T>(
                 val transform: (T) -> T? = it.third
 
                 if (check(p)) {
-                    val ancestorTree = factory.fromPrototypeSubtree(parentTree.root)
+                    val ancestorTree = factory.fromPrototypeSubTree(parentTree.root)
 
                     val transformedTree = TransformedTree(
-                            createTransformedTree(factory.fromPrototypeSubtree(parentTree.root), p, transform),
+                            createTransformedTree(factory.fromPrototypeSubTree(parentTree.root), p, transform),
                             parentTree.ancestors)
 
-                    val currentTree = factory.fromPrototypeSubtree(transformedTree.root)
+                    val currentTree = factory.fromPrototypeSubTree(transformedTree.root)
                     transformedTree.ancestors.add(Triple(name, ancestorTree, currentTree))
                     result.add(transformedTree)
 
@@ -172,7 +172,7 @@ class BooleanAlgebraSolverService<T>(
             newParent.addChild(oppositeChild)
 
             otherChildren.forEach { otherChild ->
-                newParent.addChild(factory.fromPrototypeSubtree(otherChild))
+                newParent.addChild(factory.fromPrototypeSubTree(otherChild))
             }
 
             newParent

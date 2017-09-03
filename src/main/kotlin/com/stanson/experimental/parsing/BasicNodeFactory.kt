@@ -12,10 +12,10 @@ class BasicNodeFactory : TreeLikeFactory<BasicNode> {
         return BasicNode(prototype.type, prototype.data)
     }
 
-    override fun fromPrototypeSubtree(subTree: BasicNode): BasicNode {
+    override fun fromPrototypeSubTree(subTree: BasicNode): BasicNode {
         val result = fromPrototype(subTree)
         subTree.children.forEach {
-            result.addChild(fromPrototypeSubtree(it))
+            result.addChild(fromPrototypeSubTree(it))
         }
         return result
     }
