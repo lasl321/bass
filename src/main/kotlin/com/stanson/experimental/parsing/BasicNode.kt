@@ -25,7 +25,7 @@ class BasicNode : TreeLike<BasicNode> {
     }
 
     fun removeAllChildren() {
-        children.forEach { this.removeChild(it) }
+        children.forEach(this::removeChild)
     }
 
     override fun addChild(child: BasicNode): BasicNode {
