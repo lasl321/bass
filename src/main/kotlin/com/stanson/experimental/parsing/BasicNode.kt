@@ -7,8 +7,9 @@ class BasicNode : TreeLike<BasicNode> {
     val type: BaseNodeType
     val data: Any?
 
+    override val children: MutableList<BasicNode>
+
     private var parent: BasicNode? = null
-    private val children: MutableList<BasicNode>
 
     constructor(parseNodeType: BaseNodeType) : this(parseNodeType, null)
 
@@ -18,17 +19,13 @@ class BasicNode : TreeLike<BasicNode> {
         this.children = mutableListOf<BasicNode>()
     }
 
-    override fun getChildren(): List<BasicNode> {
-        return children
-    }
-
     fun addChildren(vararg children: BasicNode): BasicNode {
         children.forEach { this.addChild(it) }
         return this
     }
 
     fun removeAllChildren() {
-        getChildren().forEach { this.removeChild(it) }
+        children.forEach { this.removeChild(it) }
     }
 
     override fun addChild(child: BasicNode): BasicNode {
@@ -56,9 +53,9 @@ class BasicNode : TreeLike<BasicNode> {
 
     override fun hashCode(): Int {
         var result = 31
-        result = 17 * result + getNodeType().hashCode()
+        result = 17 * result + nodeType.hashCode()
         result = 17 * result + (data?.hashCode() ?: 0)
-        result = 17 * result + getChildren().hashCode()
+        result = 17 * result + children.hashCode()
         return result
     }
 
@@ -67,7 +64,7 @@ class BasicNode : TreeLike<BasicNode> {
             return false
         }
 
-        return this.getNodeType() == other.getNodeType() &&
+        return this.nodeType == other.nodeType &&
                 this.data == other.data &&
                 this.children.size == other.children.size &&
                 (this.children.toSet()) == (other.children.toSet())
@@ -78,18 +75,11 @@ class BasicNode : TreeLike<BasicNode> {
     }
 
     private fun toStringHelper(indent: String): String {
-        val dataString = if (this.data != null) {
-            "${this.data}"
-        } else {
-            "NODATA"
-        }
+        val dataString = this.data?.toString() ?: "NODATA"
 
-        var result = "$indent ${this.getNodeType()} ($dataString)\n"
-        result += this.children.joinToString(",") {
+        return "$indent $nodeType ($dataString)\n" + children.joinToString(",") {
             it.toStringHelper("$indent>")
         }
-
-        return result
     }
 
     override val nodeType: NodeType

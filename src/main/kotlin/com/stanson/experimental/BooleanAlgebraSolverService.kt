@@ -54,7 +54,7 @@ class BooleanAlgebraSolverService<T>(
             transformedTrees.clear()
         }
 
-        return workingTree.root.getChildren().first()
+        return workingTree.root.children.first()
     }
 
     private fun generatePermutations(result: MutableList<TransformedTree<T>>, depth: Int, currentDepth: Int, parentTree: TransformedTree<T>) {
@@ -92,7 +92,7 @@ class BooleanAlgebraSolverService<T>(
     private fun createTransformedTree(root: T, target: T, transform: (T) -> T?): T {
         val result = factory.fromPrototype(root)
 
-        val children = root.getChildren()
+        val children = root.children
 
         val transformedChildren = children.map { it ->
             createTransformedTree(it, target, transform)
@@ -108,7 +108,7 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun countExpressions(tree: T): Int {
-        return tree.getChildren().map { countExpressions(it) }.fold(1) { total, value -> total + value }
+        return tree.children.map { countExpressions(it) }.fold(1) { total, value -> total + value }
     }
 
     private fun calculateTreeDepth(tree: T): Int {
@@ -116,10 +116,10 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun depthCalculatorRecursion(node: T, parentDepth: Int): Int {
-        return if (node.getNodeType() == NodeType.PREDICATE) {
+        return if (node.nodeType == NodeType.PREDICATE) {
             1 + parentDepth
         } else {
-            val childPathDepths = node.getChildren().map {
+            val childPathDepths = node.children.map {
                 depthCalculatorRecursion(it, parentDepth + 1)
             }
             childPathDepths.max() ?: 0
@@ -127,25 +127,25 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun canAbsorbComposite(input: T): Boolean {
-        if (input.getNodeType() in COMPOSITES && input.getChildren().size >= 2) {
-            val oppositeComposites = input.getChildren().filter {
-                it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] && it.getChildren().isNotEmpty()
+        if (input.nodeType in COMPOSITES && input.children.size >= 2) {
+            val oppositeComposites = input.children.filter {
+                it.nodeType == COMPOSITE_FLIP[input.nodeType] && it.children.isNotEmpty()
             }
-            val otherChildren = input.getChildren().filter { it !in oppositeComposites }.toSet()
+            val otherChildren = input.children.filter { it !in oppositeComposites }.toSet()
 
-            return oppositeComposites.any { otherChildren.intersect(it.getChildren().toSet()).isNotEmpty() }
+            return oppositeComposites.any { otherChildren.intersect(it.children.toSet()).isNotEmpty() }
         }
         return false
     }
 
     private fun absorbComposite(input: T): T {
-        val oppositeComposites = input.getChildren().filter {
-            it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] && it.getChildren().isNotEmpty()
+        val oppositeComposites = input.children.filter {
+            it.nodeType == COMPOSITE_FLIP[input.nodeType] && it.children.isNotEmpty()
         }
 
-        val otherChildren = input.getChildren().filter { it !in oppositeComposites }.toSet()
+        val otherChildren = input.children.filter { it !in oppositeComposites }.toSet()
         oppositeComposites.forEach {
-            if (otherChildren.intersect(it.getChildren().toSet()).isNotEmpty()) {
+            if (otherChildren.intersect(it.children.toSet()).isNotEmpty()) {
                 input.removeChild(it)
             }
         }
@@ -153,22 +153,22 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun canDistributeTerm(input: T): Boolean {
-        return input.getNodeType() in COMPOSITES && input.getChildren().size > 1 &&
-                input.getChildren().any { child -> child.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] }
+        return input.nodeType in COMPOSITES && input.children.size > 1 &&
+                input.children.any { child -> child.nodeType == COMPOSITE_FLIP[input.nodeType] }
     }
 
     private fun distributeTerm(input: T): T {
-        val inputChildren = input.getChildren()
-        val oppositeCompositeChild = inputChildren.find { it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] }!!
+        val inputChildren = input.children
+        val oppositeCompositeChild = inputChildren.find { it.nodeType == COMPOSITE_FLIP[input.nodeType] }!!
 
         val otherChildren = inputChildren - oppositeCompositeChild
 
-        val childrenOfOpposite = oppositeCompositeChild.getChildren().toList()
+        val childrenOfOpposite = oppositeCompositeChild.children.toList()
 
-        val result = factory.withType(COMPOSITE_FLIP[input.getNodeType()]!!)
+        val result = factory.withType(COMPOSITE_FLIP[input.nodeType]!!)
 
         val newTerms = childrenOfOpposite.map { oppositeChild ->
-            val newParent = factory.withType(input.getNodeType())
+            val newParent = factory.withType(input.nodeType)
             newParent.addChild(oppositeChild)
 
             otherChildren.forEach { otherChild ->
@@ -184,13 +184,13 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun canExtractCommonTerm(input: T): Boolean {
-        if (input.getNodeType() in COMPOSITES) {
-            val oppositeCompositeChildren = input.getChildren().filter {
-                it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()]
+        if (input.nodeType in COMPOSITES) {
+            val oppositeCompositeChildren = input.children.filter {
+                it.nodeType == COMPOSITE_FLIP[input.nodeType]
             }
 
             if (oppositeCompositeChildren.size > 1) {
-                val oppositeKidsChildren = oppositeCompositeChildren.map { it.getChildren() }
+                val oppositeKidsChildren = oppositeCompositeChildren.map { it.children }
 
                 val commonTerms = mutableListOf<T>()
                 commonTerms.addAll(oppositeKidsChildren[0])
@@ -205,10 +205,10 @@ class BooleanAlgebraSolverService<T>(
 
     private fun extractCommonTerm(input: T): T {
         // Remove everything that's being pushed down a level
-        val oppositeComposites = input.getChildren().filter { it.getNodeType() == COMPOSITE_FLIP[input.getNodeType()] }
+        val oppositeComposites = input.children.filter { it.nodeType == COMPOSITE_FLIP[input.nodeType] }
         oppositeComposites.forEach { input.removeChild(it) }
 
-        val setOfChildren: List<List<T>> = oppositeComposites.map { it.getChildren() }
+        val setOfChildren: List<List<T>> = oppositeComposites.map { it.children }
         val commonTerms = mutableListOf<T>()
         commonTerms.addAll(setOfChildren[0])
 
@@ -219,18 +219,18 @@ class BooleanAlgebraSolverService<T>(
         // Get the common term (just take the first)
         val commonTerm = commonTerms.first()
         // Make the new composites
-        val newOpposite = factory.withType(COMPOSITE_FLIP[input.getNodeType()]!!)
+        val newOpposite = factory.withType(COMPOSITE_FLIP[input.nodeType]!!)
 
-        val newSame = factory.withType(input.getNodeType())
+        val newSame = factory.withType(input.nodeType)
 
         // Now add the opposite composite grandkids to the 'newSame' collection
         oppositeComposites.forEach {
             it.removeChild(commonTerm)
             // if this is a degenerate composite, just add the one remaining child
-            if (it.getChildren().size == 1) {
-                val firstChild = it.getChildren()[0]
+            if (it.children.size == 1) {
+                val firstChild = it.children[0]
                 newSame.addChild(firstChild)
-            } else if (it.getChildren().size > 1) {
+            } else if (it.children.size > 1) {
                 newSame.addChild(it)
             } // otherwise it's empty and should be ignored.
         }
@@ -244,14 +244,14 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun isIdempotentComposite(input: T): Boolean {
-        if (input.getNodeType() in COMPOSITES) {
-            return input.getChildren().toSet().size != input.getChildren().size
+        if (input.nodeType in COMPOSITES) {
+            return input.children.toSet().size != input.children.size
         }
         return false
     }
 
     private fun collapseIdempotentComposite(input: T): T {
-        val children = input.getChildren().toList()
+        val children = input.children.toList()
         children.forEach { input.removeChild(it) }
 
         children.toSet().forEach { input.addChild(it) }
@@ -259,72 +259,72 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun containsCollapsibleComposites(input: T): Boolean {
-        return input.getNodeType() in COMPOSITES && input.getChildren().any { it.getNodeType() == input.getNodeType() }
+        return input.nodeType in COMPOSITES && input.children.any { it.nodeType == input.nodeType }
     }
 
     private fun collapseComposite(input: T): T {
-        val redundantKids = input.getChildren().filter { it.getNodeType() == input.getNodeType() }
+        val redundantKids = input.children.filter { it.nodeType == input.nodeType }
         redundantKids.forEach { input.removeChild(it) }
 
-        val grandKids = redundantKids.flatMap { it.getChildren() }
+        val grandKids = redundantKids.flatMap { it.children }
         grandKids.forEach { input.addChild(it) }
 
         return input
     }
 
     private fun doubleNegationIsPresent(input: T): Boolean {
-        return input.getNodeType() == NodeType.NOT &&
-                input.getChildren().isNotEmpty() &&
-                input.getChildren().first().getNodeType() == NodeType.NOT
+        return input.nodeType == NodeType.NOT &&
+                input.children.isNotEmpty() &&
+                input.children.first().nodeType == NodeType.NOT
     }
 
     private fun collapseDoubleNegation(input: T): T? {
-        return if (input.getChildren().first().getChildren().isNotEmpty()) {
-            input.getChildren().first().getChildren().first()
+        return if (input.children.first().children.isNotEmpty()) {
+            input.children.first().children.first()
         } else {
             null
         }
     }
 
     private fun isDegenerateComposite(input: T): Boolean {
-        return input.getNodeType() in COMPOSITES && input.getChildren().size < 2
+        return input.nodeType in COMPOSITES && input.children.size < 2
     }
 
 
     private fun collapseDegenerateComposite(input: T): T? {
-        return if (input.getChildren().isNotEmpty()) {
-            input.getChildren().first()
+        return if (input.children.isNotEmpty()) {
+            input.children.first()
         } else {
             null
         }
     }
 
     private fun doesDeMorgansLawApply(input: T): Boolean {
-        val caseOne = input.getNodeType() == NodeType.NOT &&
-                input.getChildren().first().getNodeType() in COMPOSITES &&
-                input.getChildren().first().getChildren().size == 2
+        val caseOne = input.nodeType == NodeType.NOT &&
+                input.children.first().nodeType in COMPOSITES &&
+                input.children.first().children.size == 2
 
-        val caseTwo = input.getNodeType() in COMPOSITES &&
-                input.getChildren().size == 2 &&
-                input.getChildren().all { it.getNodeType() == NodeType.NOT }
+        val caseTwo = input.nodeType in COMPOSITES &&
+                input.children.size == 2 &&
+                input.children.all { it.nodeType == NodeType.NOT }
 
         return caseOne || caseTwo
     }
 
     private fun applyDeMorgansLaw(input: T): T {
-        return if (input.getNodeType() in COMPOSITES) {
-            val elementOne = input.getChildren()[0].getChildren()[0]
-            val elementTwo = input.getChildren()[1].getChildren()[0]
+        return if (input.nodeType in COMPOSITES) {
+            val elementOne = input.children[0].children[0]
+            val elementTwo = input.children[1].children[0]
 
             factory.withType(NodeType.NOT).addChild(
-                    factory.withType(COMPOSITE_FLIP[input.getNodeType()]!!).addChildren(listOf(elementOne, elementTwo))
+                    factory.withType(COMPOSITE_FLIP[input.nodeType]!!).addChildren(listOf(elementOne, elementTwo))
             )
         } else {
-            val composite = input.getChildren()[0]
-            val elementOne = composite.getChildren()[0]
-            val elementTwo = composite.getChildren()[1]
+            val composite = input.children[0]
+            val elementOne = composite.children[0]
+            val elementTwo = composite.children[1]
 
-            factory.withType(COMPOSITE_FLIP[composite.getNodeType()]!!).addChildren(listOf(
+            factory.withType(COMPOSITE_FLIP[composite.nodeType]!!).addChildren(listOf(
                     factory.withType(NodeType.NOT).addChild(elementOne),
                     factory.withType(NodeType.NOT).addChild(elementTwo)
             ))
@@ -332,28 +332,28 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun containsBasicComplement(input: T): Boolean {
-        val nots = input.getChildren().filter { it.getNodeType() == NodeType.NOT }
+        val nots = input.children.filter { it.nodeType == NodeType.NOT }
 
-        return nots.any { it.getChildren().isNotEmpty() && it.getChildren().first().getNodeType() in CONSTANT_BOOL }
+        return nots.any { it.children.isNotEmpty() && it.children.first().nodeType in CONSTANT_BOOL }
     }
 
     private fun simplifyBasicComplement(input: T): T {
-        val readyForAbsorption: List<T> = input.getChildren().filter {
-            it.getNodeType() == NodeType.NOT && it.getChildren().isNotEmpty() && it.getChildren().first().getNodeType() in CONSTANT_BOOL
+        val readyForAbsorption: List<T> = input.children.filter {
+            it.nodeType == NodeType.NOT && it.children.isNotEmpty() && it.children.first().nodeType in CONSTANT_BOOL
         }
 
         readyForAbsorption.forEach {
             input.removeChild(it)
-            input.addChild(factory.withType(CONSTANT_BOOL_FLIP[it.getChildren().first().getNodeType()]!!))
+            input.addChild(factory.withType(CONSTANT_BOOL_FLIP[it.children.first().nodeType]!!))
         }
 
         return input
     }
 
     private fun containsComplement(input: T): Boolean {
-        if (input.getNodeType() in COMPOSITES) {
-            val havesAndHaveNot: Map<Boolean, List<T>> = input.getChildren().groupBy { it.getNodeType() == NodeType.NOT }
-            val negatedChildren: Set<T> = havesAndHaveNot.getOrDefault(true, listOf()).flatMap { p -> p.getChildren() }.toSet()
+        if (input.nodeType in COMPOSITES) {
+            val havesAndHaveNot: Map<Boolean, List<T>> = input.children.groupBy { it.nodeType == NodeType.NOT }
+            val negatedChildren: Set<T> = havesAndHaveNot.getOrDefault(true, listOf()).flatMap { p -> p.children }.toSet()
             val otherChildren: Set<T> = havesAndHaveNot.getOrDefault(false, listOf()).toSet()
 
             if (negatedChildren.intersect(otherChildren).isNotEmpty()) {
@@ -365,8 +365,8 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun simplifyComplement(input: T): T {
-        input.getChildren().forEach { input.removeChild(it) }
-        return if (input.getNodeType() == NodeType.ANY) {
+        input.children.forEach { input.removeChild(it) }
+        return if (input.nodeType == NodeType.ANY) {
             input.addChild(factory.withType(NodeType.TRUE))
         } else {
             input.addChild(factory.withType(NodeType.FALSE))
@@ -374,12 +374,12 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun isCompositeWithConstant(input: T): Boolean {
-        return (input.getNodeType() == NodeType.ANY && input.getChildren().any { it.getNodeType() == NodeType.TRUE }) ||
-                (input.getNodeType() == NodeType.ALL && input.getChildren().any { it.getNodeType() == NodeType.FALSE })
+        return (input.nodeType == NodeType.ANY && input.children.any { it.nodeType == NodeType.TRUE }) ||
+                (input.nodeType == NodeType.ALL && input.children.any { it.nodeType == NodeType.FALSE })
     }
 
     private fun simplifyCompositeWithConstant(input: T): T {
-        return if (input.getNodeType() == NodeType.ANY) {
+        return if (input.nodeType == NodeType.ANY) {
             factory.withType(NodeType.TRUE)
         } else {
             factory.withType(NodeType.FALSE)
@@ -387,7 +387,7 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun depthFirstTraversal(root: T, visitor: (T) -> Unit) {
-        root.getChildren().forEach { depthFirstTraversal(it, visitor) }
+        root.children.forEach { depthFirstTraversal(it, visitor) }
         visitor(root)
     }
 
@@ -395,34 +395,34 @@ class BooleanAlgebraSolverService<T>(
         fun printer(node: T): String {
             // process myself, then each of my children
             var representation = "wtf"
-            if (node.getNodeType() == NodeType.PREDICATE) {
+            if (node.nodeType == NodeType.PREDICATE) {
                 representation = ((node as BasicNode).data as String)[0].toString()
-            } else if (node.getNodeType() == NodeType.FALSE) {
+            } else if (node.nodeType == NodeType.FALSE) {
                 representation = "F"
-            } else if (node.getNodeType() == NodeType.TRUE) {
+            } else if (node.nodeType == NodeType.TRUE) {
                 representation = "T"
-            } else if (node.getNodeType() == NodeType.NULL) {
+            } else if (node.nodeType == NodeType.NULL) {
                 representation = "X"
-            } else if (node.getNodeType() == NodeType.ANY) {
+            } else if (node.nodeType == NodeType.ANY) {
                 representation = " + "
-            } else if (node.getNodeType() == NodeType.ALL) {
+            } else if (node.nodeType == NodeType.ALL) {
                 representation = " * "
-            } else if (node.getNodeType() == NodeType.NOT) {
+            } else if (node.nodeType == NodeType.NOT) {
                 representation = " ¬"
             }
             var result = ""
-            if (node.getNodeType() == NodeType.NOT) {
+            if (node.nodeType == NodeType.NOT) {
                 result += representation
             }
-            if (node.getNodeType() in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
+            if (node.nodeType in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
                 result += ('(')
-            } else if (node.getNodeType() in listOf(NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE)) {
+            } else if (node.nodeType in listOf(NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE)) {
                 result += representation
             }
 
-            val childRepresentations = node.getChildren().map { printer(it) }
+            val childRepresentations = node.children.map { printer(it) }
             result += childRepresentations.joinToString(representation)
-            if (node.getNodeType() in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
+            if (node.nodeType in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
                 result += (')')
             }
             return result
