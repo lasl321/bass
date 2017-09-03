@@ -8,9 +8,9 @@ class BooleanAlgebraSolverService<T>(
         private var lookAhead: Int
 ) where T : TreeLike<T> {
     companion object {
-        val CONSTANT_BOOL: List<NodeType> = listOf(NodeType.TRUE, NodeType.FALSE)
+        val CONSTANT_BOOL = listOf(NodeType.TRUE, NodeType.FALSE)
         val CONSTANT_BOOL_FLIP = mapOf(NodeType.TRUE to NodeType.FALSE, NodeType.FALSE to NodeType.TRUE)
-        val COMPOSITES: List<NodeType> = listOf(NodeType.ANY, NodeType.ALL)
+        val COMPOSITES = listOf(NodeType.ANY, NodeType.ALL)
         val COMPOSITE_FLIP = mapOf(NodeType.ANY to NodeType.ALL, NodeType.ALL to NodeType.ANY)
     }
 
