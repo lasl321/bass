@@ -29,9 +29,7 @@ class BasicNode : TreeLike<BasicNode> {
     }
 
     override fun addChild(child: BasicNode): BasicNode {
-        if (child.parent != null) {
-            child.parent!!.removeChild(child)
-        }
+        child.parent?.removeChild(child)
         children.add(child)
         child.parent = this
         return this
