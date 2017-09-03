@@ -365,7 +365,8 @@ class BooleanAlgebraSolverService<T>(
     }
 
     private fun simplifyComplement(input: T): T {
-        input.children.forEach { input.removeChild(it) }
+        input.children.toList().forEach(input::removeChild)
+
         return if (input.nodeType == NodeType.ANY) {
             input.addChild(factory.withType(NodeType.TRUE))
         } else {
