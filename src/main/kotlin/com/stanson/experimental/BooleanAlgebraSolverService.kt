@@ -88,19 +88,17 @@ class BooleanAlgebraSolverService<T>(
         depthFirstTraversal(parentTree.root, ::visitor)
     }
 
-    private fun createTransformedTree(root: T, target: T, transform: (T) -> T?): T {
+    private fun createTransformedTree(root: T, target: T, transform: (T) -> T?): T? {
         val result = factory.fromPrototype(root)
 
-        val children = root.children
-
-        val transformedChildren = children.map { it ->
+        val transformedChildren = root.children.map {
             createTransformedTree(it, target, transform)
         }
 
-        result.addChildren(transformedChildren)
+        result.addChildren(transformedChildren.filterNotNull())
 
         return if (root == target) {
-            transform(result)!!
+            transform(result)
         } else {
             result
         }
