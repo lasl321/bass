@@ -24,7 +24,7 @@ class BasicNodeFactory : TreeLikeFactory<BasicNode> {
 
     override fun fromPrototypeSubtree(subTree: BasicNode): BasicNode {
         val result = fromPrototype(subTree)
-        subTree.children.forEach {
+        subTree.getChildren().forEach {
             result.addChild(fromPrototypeSubtree(it))
         }
         return result
