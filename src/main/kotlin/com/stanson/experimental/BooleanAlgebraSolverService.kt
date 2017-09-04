@@ -391,40 +391,30 @@ class BooleanAlgebraSolverService<T>(
 
     fun prettyPrint(input: T): String {
         fun printer(node: T): String {
-            // process myself, then each of my children
-            var representation = "wtf"
-            if (node.nodeType == NodeType.PREDICATE) {
-                representation = ((node as BasicNode).data as String)[0].toString()
-            } else if (node.nodeType == NodeType.FALSE) {
-                representation = "F"
-            } else if (node.nodeType == NodeType.TRUE) {
-                representation = "T"
-            } else if (node.nodeType == NodeType.NULL) {
-                representation = "X"
-            } else if (node.nodeType == NodeType.ANY) {
-                representation = " + "
-            } else if (node.nodeType == NodeType.ALL) {
-                representation = " * "
-            } else if (node.nodeType == NodeType.NOT) {
-                representation = " ¬"
-            }
-            var result = ""
-            if (node.nodeType == NodeType.NOT) {
-                result += representation
-            }
-            if (node.nodeType in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
-                result += ('(')
-            } else if (node.nodeType in listOf(NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE)) {
-                result += representation
+            val representation = when (node.nodeType) {
+                NodeType.PREDICATE -> ((node as BasicNode).data as String)[0].toString()
+                NodeType.FALSE -> "F"
+                NodeType.TRUE -> "T"
+                NodeType.NULL -> "X"
+                NodeType.ANY -> " + "
+                NodeType.ALL -> " * "
+                NodeType.NOT -> " ¬"
             }
 
-            val childRepresentations = node.children.map { printer(it) }
-            result += childRepresentations.joinToString(representation)
-            if (node.nodeType in listOf(NodeType.ANY, NodeType.ALL, NodeType.NOT)) {
-                result += (')')
+            val prefix = when (node.nodeType) {
+                NodeType.ANY, NodeType.ALL -> "("
+                NodeType.NOT -> "$representation("
+                NodeType.NULL, NodeType.PREDICATE, NodeType.TRUE, NodeType.FALSE -> representation
             }
-            return result
+
+            val childRepresentations = node.children.joinToString(representation) { printer(it) }
+
+            return when (node.nodeType) {
+                NodeType.ANY, NodeType.ALL, NodeType.NOT -> prefix + childRepresentations + ")"
+                else -> prefix + childRepresentations
+            }
         }
+
         return printer(input)
     }
 }
