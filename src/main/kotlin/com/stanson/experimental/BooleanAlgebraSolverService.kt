@@ -148,12 +148,13 @@ class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) wh
             input.nodeType in COMPOSITES && input.children.any { it.nodeType == COMPOSITE_FLIP[input.nodeType] }
 
     private fun distributeTerm(input: T): T {
+        val oppositeNodeType = COMPOSITE_FLIP[input.nodeType]!!
         val inputChildren = input.children
-        val oppositeCompositeChild = inputChildren.find { it.nodeType == COMPOSITE_FLIP[input.nodeType] }!!
+        val oppositeCompositeChild = inputChildren.find { it.nodeType == oppositeNodeType }!!
         val otherChildren = inputChildren - oppositeCompositeChild
         val childrenOfOpposite = oppositeCompositeChild.children.toList()
 
-        val result = factory.withType(COMPOSITE_FLIP[input.nodeType]!!)
+        val result = factory.withType(oppositeNodeType)
 
         return result.apply {
             addChildren(childrenOfOpposite.map { childOfOpposite ->
