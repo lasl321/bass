@@ -144,10 +144,8 @@ class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) wh
         return input
     }
 
-    private fun canDistributeTerm(input: T): Boolean {
-        return input.nodeType in COMPOSITES && input.children.size > 1 &&
-                input.children.any { child -> child.nodeType == COMPOSITE_FLIP[input.nodeType] }
-    }
+    private fun canDistributeTerm(input: T): Boolean =
+            input.nodeType in COMPOSITES && input.children.any { child -> child.nodeType == COMPOSITE_FLIP[input.nodeType] }
 
     private fun distributeTerm(input: T): T {
         val inputChildren = input.children
