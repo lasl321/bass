@@ -3,8 +3,7 @@ package com.stanson.experimental
 import com.stanson.experimental.parsing.BasicNode
 
 class BooleanAlgebraSolverService<T>(
-        private val factory: TreeLikeFactory<T>,
-        private var lookAhead: Int
+        private val factory: TreeLikeFactory<T>
 ) where T : TreeLike<T> {
     companion object {
         val CONSTANT_BOOL = listOf(NodeType.TRUE, NodeType.FALSE)
@@ -27,7 +26,7 @@ class BooleanAlgebraSolverService<T>(
             TransformItem("Composite with constant", this::isCompositeWithConstant, this::simplifyCompositeWithConstant)
     )
 
-    fun solve(input: T): T {
+    fun solve(input: T, lookAhead: Int = 1): T {
         var workingTree = TransformedTree(factory.withType(NodeType.NULL).addChild(input), mutableListOf())
 
         var expressionCount = countExpressions(workingTree.root)

@@ -15,7 +15,7 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
     TreeLikeFactory<BasicNode> factory = new BasicNodeFactory()
 
     void setup() {
-        service = new BooleanAlgebraSolverService<BasicNode>(factory, 1)
+        service = new BooleanAlgebraSolverService<BasicNode>(factory)
     }
 
     void 'simplifies Distributive Law'() {
@@ -139,7 +139,7 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
 
         BasicNode expected = new BasicNode(BaseNodeType.PREDICATE, 'A')
         when:
-        BasicNode result = service.solve(input)
+        BasicNode result = service.solve(input, 1)
         then:
         result == expected
     }
@@ -165,8 +165,8 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                 new BasicNode(BaseNodeType.PREDICATE, 'B')
         )
         expect:
-        service.solve(andVersion) == expectedAnd
-        service.solve(orVersion) == expectedOr
+        service.solve(andVersion, 1) == expectedAnd
+        service.solve(orVersion, 1) == expectedOr
     }
 
     void 'identifies cases for DeMorgans Law'() {
@@ -285,8 +285,8 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
         )
 
         when:
-        BasicNode resultOne = service.solve(formOne)
-        BasicNode resultTwo = service.solve(formTwo)
+        BasicNode resultOne = service.solve(formOne, 1)
+        BasicNode resultTwo = service.solve(formTwo, 1)
         then:
         resultOne == expectedOne
         resultTwo == expectedTwo
@@ -321,9 +321,9 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
         BasicNode degenerateOr = new BasicNode(BaseNodeType.ANY).addChildren(factory.fromPrototypeSubTree(predicate))
         BasicNode negationIsOK = new BasicNode(BaseNodeType.NOT).addChildren(factory.fromPrototypeSubTree(predicate))
         expect:
-        service.solve(degenerateAnd) == predicate
-        service.solve(degenerateOr) == predicate
-        service.solve(negationIsOK) == negationIsOK
+        service.solve(degenerateAnd, 1) == predicate
+        service.solve(degenerateOr, 1) == predicate
+        service.solve(negationIsOK, 1) == negationIsOK
     }
 
     void 'should count tree expressions'() {
@@ -430,9 +430,8 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                         new BasicNode(BaseNodeType.PREDICATE, 'C'),
                 )
         )
-        service.lookAhead = 2
         expect:
-        service.solve(input) == expected
+        service.solve(input, 2) == expected
     }
 
     void 'should identify absorption 1 and 2 cases'() {
@@ -579,8 +578,8 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                 )
         )
         expect:
-        service.solve(andNegation) == new BasicNode(BaseNodeType.FALSE)
-        service.solve(orNegation) == new BasicNode(BaseNodeType.TRUE)
+        service.solve(andNegation, 1) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(orNegation, 1) == new BasicNode(BaseNodeType.TRUE)
     }
 
     void 'should simplify basic complements'() {
@@ -592,8 +591,8 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                 new BasicNode(BaseNodeType.FALSE)
         )
         expect:
-        service.solve(trueNegation) == new BasicNode(BaseNodeType.FALSE)
-        service.solve(falseNegation) == new BasicNode(BaseNodeType.TRUE)
+        service.solve(trueNegation, 1) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(falseNegation, 1) == new BasicNode(BaseNodeType.TRUE)
     }
 
     void 'should simplify composites containing true or false'() {
@@ -613,7 +612,7 @@ class KotlinBooleanAlgebraSolverServiceSpec extends Specification {
                 new BasicNode(BaseNodeType.PREDICATE, 'D'),
         )
         expect:
-        service.solve(andCase) == new BasicNode(BaseNodeType.FALSE)
-        service.solve(orCase) == new BasicNode(BaseNodeType.TRUE)
+        service.solve(andCase, 1) == new BasicNode(BaseNodeType.FALSE)
+        service.solve(orCase, 1) == new BasicNode(BaseNodeType.TRUE)
     }
 }
