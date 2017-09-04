@@ -2,9 +2,7 @@ package com.stanson.experimental
 
 import com.stanson.experimental.parsing.BasicNode
 
-class BooleanAlgebraSolverService<T>(
-        private val factory: TreeLikeFactory<T>
-) where T : TreeLike<T> {
+class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) where T : TreeLike<T> {
     companion object {
         val CONSTANT_BOOL = listOf(NodeType.TRUE, NodeType.FALSE)
         val CONSTANT_BOOL_FLIP = mapOf(NodeType.TRUE to NodeType.FALSE, NodeType.FALSE to NodeType.TRUE)
