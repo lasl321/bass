@@ -177,15 +177,9 @@ class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) wh
 
                 val oppositeKidsChildren = oppositeCompositeChildren.map { it.children }
 
-                val commonTerms = mutableListOf<T>().apply {
-                    addAll(oppositeKidsChildren[0])
-                }
-
-                for (i in 1 until oppositeKidsChildren.size) {
-                    commonTerms.retainAll(oppositeKidsChildren[i])
-                }
-
-                commonTerms.isNotEmpty()
+                oppositeKidsChildren.reduce { acc, list ->
+                    acc.filter { it in list }
+                }.isNotEmpty()
             }
         }
     }
