@@ -13,18 +13,18 @@ class BooleanAlgebraSolverService<T>(
         val COMPOSITE_FLIP = mapOf(NodeType.ANY to NodeType.ALL, NodeType.ALL to NodeType.ANY)
     }
 
-    private val canApplyTransform = listOf<Triple<String, (T) -> Boolean, (T) -> T?>>(
-            Triple("DeMorgan's Law", this::doesDeMorgansLawApply, this::applyDeMorgansLaw),
-            Triple("Degenerate Composite", this::isDegenerateComposite, this::collapseDegenerateComposite),
-            Triple("Double Negative", this::doubleNegationIsPresent, this::collapseDoubleNegation),
-            Triple("Idempotent Composite", this::isIdempotentComposite, this::collapseIdempotentComposite),
-            Triple("Collapsible Composite", this::containsCollapsibleComposites, this::collapseComposite),
-            Triple("Common Term Extraction", this::canExtractCommonTerm, this::extractCommonTerm),
-            Triple("Term Distribution", this::canDistributeTerm, this::distributeTerm),
-            Triple("Absorption 1 or 2", this::canAbsorbComposite, this::absorbComposite),
-            Triple("Composite complement", this::containsComplement, this::simplifyComplement),
-            Triple("Basic complement", this::containsBasicComplement, this::simplifyBasicComplement),
-            Triple("Composite with constant", this::isCompositeWithConstant, this::simplifyCompositeWithConstant)
+    private val canApplyTransform = listOf<TransformItem<T>>(
+            TransformItem("DeMorgan's Law", this::doesDeMorgansLawApply, this::applyDeMorgansLaw),
+            TransformItem("Degenerate Composite", this::isDegenerateComposite, this::collapseDegenerateComposite),
+            TransformItem("Double Negative", this::doubleNegationIsPresent, this::collapseDoubleNegation),
+            TransformItem("Idempotent Composite", this::isIdempotentComposite, this::collapseIdempotentComposite),
+            TransformItem("Collapsible Composite", this::containsCollapsibleComposites, this::collapseComposite),
+            TransformItem("Common Term Extraction", this::canExtractCommonTerm, this::extractCommonTerm),
+            TransformItem("Term Distribution", this::canDistributeTerm, this::distributeTerm),
+            TransformItem("Absorption 1 or 2", this::canAbsorbComposite, this::absorbComposite),
+            TransformItem("Composite complement", this::containsComplement, this::simplifyComplement),
+            TransformItem("Basic complement", this::containsBasicComplement, this::simplifyBasicComplement),
+            TransformItem("Composite with constant", this::isCompositeWithConstant, this::simplifyCompositeWithConstant)
     )
 
     fun solve(input: T): T {
@@ -63,9 +63,7 @@ class BooleanAlgebraSolverService<T>(
 
         fun visitor(p: T) {
             canApplyTransform.forEach {
-                val name = it.first
-                val check = it.second
-                val transform = it.third
+                val (name, check, transform) = it
 
                 if (check(p)) {
                     val ancestorTree = factory.fromPrototypeSubTree(parentTree.root)
