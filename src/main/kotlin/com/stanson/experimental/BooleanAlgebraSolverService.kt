@@ -150,27 +150,19 @@ class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) wh
     private fun distributeTerm(input: T): T {
         val inputChildren = input.children
         val oppositeCompositeChild = inputChildren.find { it.nodeType == COMPOSITE_FLIP[input.nodeType] }!!
-
         val otherChildren = inputChildren - oppositeCompositeChild
-
         val childrenOfOpposite = oppositeCompositeChild.children.toList()
 
         val result = factory.withType(COMPOSITE_FLIP[input.nodeType]!!)
 
-        val newTerms = childrenOfOpposite.map { oppositeChild ->
-            val newParent = factory.withType(input.nodeType)
-            newParent.addChild(oppositeChild)
-
-            otherChildren.forEach { otherChild ->
-                newParent.addChild(factory.fromPrototypeSubTree(otherChild))
-            }
-
-            newParent
+        return result.apply {
+            addChildren(childrenOfOpposite.map { childOfOpposite ->
+                factory.withType(input.nodeType).apply {
+                    addChild(childOfOpposite)
+                    addChildren(otherChildren.map(factory::fromPrototypeSubTree))
+                }
+            })
         }
-
-        newTerms.forEach { result.addChild(it) }
-
-        return result
     }
 
     private fun canExtractCommonTerm(input: T): Boolean {
