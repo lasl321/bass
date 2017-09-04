@@ -167,23 +167,27 @@ class BooleanAlgebraSolverService<T>(private val factory: TreeLikeFactory<T>) wh
     }
 
     private fun canExtractCommonTerm(input: T): Boolean {
-        if (input.nodeType in COMPOSITES) {
-            val oppositeCompositeChildren = input.children.filter {
-                it.nodeType == COMPOSITE_FLIP[input.nodeType]
-            }
+        return when {
+            input.nodeType !in COMPOSITES -> false
+            input.children.all { it.nodeType != COMPOSITE_FLIP[input.nodeType] } -> false
+            else -> {
+                val oppositeCompositeChildren = input.children.filter {
+                    it.nodeType == COMPOSITE_FLIP[input.nodeType]
+                }
 
-            if (oppositeCompositeChildren.size > 1) {
                 val oppositeKidsChildren = oppositeCompositeChildren.map { it.children }
 
-                val commonTerms = mutableListOf<T>()
-                commonTerms.addAll(oppositeKidsChildren[0])
+                val commonTerms = mutableListOf<T>().apply {
+                    addAll(oppositeKidsChildren[0])
+                }
+
                 for (i in 1 until oppositeKidsChildren.size) {
                     commonTerms.retainAll(oppositeKidsChildren[i])
                 }
-                return !commonTerms.isEmpty()
+
+                commonTerms.isNotEmpty()
             }
         }
-        return false
     }
 
     private fun extractCommonTerm(input: T): T {
